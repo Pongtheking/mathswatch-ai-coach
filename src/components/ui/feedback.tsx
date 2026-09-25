@@ -15,7 +15,7 @@ export function friendlyAiError(raw: string | undefined | null): string {
     return "That API key is not real (or was revoked). Create a new one in Google AI Studio and paste the whole key.";
   }
   if (/429|quota/i.test(msg)) {
-    return "Free Gemini quota hit for the moment — wait a minute and try again.";
+    return "Google's free Gemini quota is currently exhausted for this key. Waiting a minute only helps with a short rate limit; if it happens again, wait for Google's quota reset before trying another mark.";
   }
   if (/not available/i.test(msg)) {
     return "Add your Gemini API key in Settings before using AI marking.";

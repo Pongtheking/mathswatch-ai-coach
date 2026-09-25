@@ -165,7 +165,7 @@ async function callGemini(
           return {
             ok: false,
             error:
-              "Free Gemini quota hit for the moment — wait a minute (or a day for the daily cap) and try again.",
+              "Google's free Gemini quota is currently exhausted for this key. Waiting a minute only helps with a short rate limit; if it happens again, wait for Google's quota reset before trying another mark.",
           };
         }
         if (result.status === 503) {

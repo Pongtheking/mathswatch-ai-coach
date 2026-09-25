@@ -49,6 +49,7 @@ function MarkerPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
   const [hint, setHint] = useState("Drop your completed paper and the official mark scheme.");
+  const [failure, setFailure] = useState<{ message: string; paperId?: string; partial: boolean } | null>(null);
 
   const mut = useMutation({
     mutationFn: async (input: {
@@ -93,14 +94,19 @@ function MarkerPage() {
     },
     onSuccess: (res) => {
       setStage(null);
+      qc.invalidateQueries({ queryKey: ["papers"] });
       if (!res.ok) {
+        setFailure({ message: res.error, paperId: res.paperId, partial: res.partial === true });
+        if (res.partial && res.paperId) {
+          void nav({ to: "/marker/$id", params: { id: res.paperId } });
+        }
         return;
       }
-      qc.invalidateQueries({ queryKey: ["papers"] });
       void nav({ to: "/marker/$id", params: { id: res.paperId } });
     },
-    onError: () => {
+    onError: (error) => {
       setStage(null);
+      setFailure({ message: error.message || "The paper could not be marked. Please try again later.", partial: false });
     },
   });
 
@@ -109,6 +115,7 @@ function MarkerPage() {
   const hasKey = Boolean(history.data?.aiAvailable);
 
   const onMark = () => {
+    setFailure(null);
     if (!hasKey) {
       toast.error("Add a real Gemini API key before marking.");
       document.getElementById("ai-key")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -277,12 +284,20 @@ function MarkerPage() {
             lede="Reading the scheme, then awarding method and accuracy marks across the whole paper. Stay on this screen while batches run."
           />
         ) : null}
-        {mut.isError || (mut.data && !mut.data.ok) ? (
-          <ErrorBanner
-            className="mt-3"
-            message={mut.data && "error" in mut.data ? mut.data.error : mut.error?.message}
-            onRetry={onMark}
-          />
+        {failure ? (
+          <div className="mt-3 space-y-3">
+            <ErrorBanner
+              message={failure.message}
+              onRetry={/quota/i.test(failure.message) ? undefined : onMark}
+            />
+            {failure.partial && failure.paperId ? (
+              <Button variant="outline" asChild>
+                <Link to="/marker/$id" params={{ id: failure.paperId }}>
+                  View partial marks
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </Card>
 

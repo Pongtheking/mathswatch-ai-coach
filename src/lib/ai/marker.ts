@@ -231,6 +231,7 @@ export async function markCompletedScript(input: {
       scheme: MarkSchemeParse;
       paper: PaperParse | null;
       mark: PaperMark;
+      partial: boolean;
     }
   | { ok: false; error: string }
 > {
@@ -276,6 +277,7 @@ export async function markCompletedScript(input: {
   const batches = chunk(input.paperImages, 8, 1);
   const imageBatches = batches.length ? batches : [[]];
   const marks: PaperMark[] = [];
+  let incompleteWarning = "";
 
   for (let i = 0; i < imageBatches.length; i++) {
     const markRes = await markAgainstScheme({
@@ -286,7 +288,10 @@ export async function markCompletedScript(input: {
       typedAnswers: i === 0 ? input.paperText : undefined,
     });
     if (!markRes.ok) {
-      if (marks.length) break;
+      if (marks.length) {
+        incompleteWarning = `Only the earlier pages were marked: ${markRes.error}`;
+        break;
+      }
       return markRes;
     }
     marks.push(normaliseTotals(markRes.data));
@@ -296,7 +301,9 @@ export async function markCompletedScript(input: {
     return { ok: false, error: "Could not mark this script. Retry with clearer pages." };
   }
 
-  return { ok: true, scheme, paper, mark: mergePaperMarks(marks) };
+  const mark = mergePaperMarks(marks);
+  if (incompleteWarning) mark.warnings = [...mark.warnings, incompleteWarning];
+  return { ok: true, scheme, paper, mark, partial: Boolean(incompleteWarning) };
 }
 
 function chunk<T>(items: T[], size: number, overlap: number): T[][] {

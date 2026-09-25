@@ -169,9 +169,10 @@ export const markPaper = createServerFn({ method: "POST" })
       });
 
       if (!result.ok) {
-        await sql`update papers set status = 'draft', paper_notes = ${result.error}, updated_at = now()
+        const hasPartialMark = Boolean(existingMark?.questions.length);
+        await sql`update papers set status = ${hasPartialMark ? "partial" : "draft"}, paper_notes = ${result.error}, updated_at = now()
           where id = ${id} and user_id = ${context.userId}`;
-        return { ok: false as const, error: result.error, paperId: id };
+        return { ok: false as const, error: result.error, paperId: id, partial: hasPartialMark };
       }
 
       const mark = existingMark ? mergePaperMarks([existingMark, result.mark]) : result.mark;
@@ -182,7 +183,7 @@ export const markPaper = createServerFn({ method: "POST" })
       const calculator = paper?.calculator ?? "unknown";
 
       await sql`update papers set
-        status = ${lastBatch ? "marked" : "marking"},
+        status = ${lastBatch ? (result.partial ? "partial" : "marked") : "marking"},
         board = ${board},
         tier = ${tier},
         calculator = ${calculator},
@@ -287,6 +288,7 @@ export const markPaper = createServerFn({ method: "POST" })
         paperId: id,
         awarded: mark.total_awarded,
         available: mark.total_available,
+        partial: Boolean(result.partial),
       };
     });
   });
