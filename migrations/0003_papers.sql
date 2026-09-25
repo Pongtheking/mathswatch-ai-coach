@@ -8,7 +8,7 @@ create table if not exists papers (
   tier            text not null default 'unknown',
   calculator      text not null default 'unknown',
   status          text not null default 'draft'
-                    check (status in ('draft', 'parsed', 'ready', 'marking', 'marked')),
+                    check (status in ('draft', 'parsed', 'ready', 'marking', 'partial', 'marked')),
   paper_notes     text not null default '',
   ms_notes        text not null default '',
   parse_json      text,
