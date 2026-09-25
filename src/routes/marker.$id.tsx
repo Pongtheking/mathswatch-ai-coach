@@ -85,6 +85,12 @@ function PaperReport() {
       </Card>
 
       <h2 className="mt-8 font-display text-2xl">Question by question</h2>
+      {!report?.questions.length ? (
+        <Card className="mt-3 border-warn/40">
+          <CardTitle className="text-lg">Detailed feedback was not produced</CardTitle>
+          <p className="mt-2 text-sm text-fg-muted">This score should not be used for revision. Run the marker again so it can provide evidence and feedback for each question.</p>
+        </Card>
+      ) : null}
       <div className="mt-3 space-y-3">
         {(report?.questions ?? []).map((qMark) => {
           const row = questions.find((x) => x.ref === qMark.question_ref);

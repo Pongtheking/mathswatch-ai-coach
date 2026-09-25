@@ -139,7 +139,7 @@ async function callGemini(
   const { contents, systemInstruction } = toGeminiRequest(messages);
   const maxTokens = Math.max(opts?.maxTokens ?? 1800, opts?.json ? 4096 : 1200);
   const models = opts?.quality
-    ? [...MODELS.filter((m) => m !== "gemini-3.5-flash-lite"), "gemini-3.5-flash-lite"]
+    ? ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"]
     : [preferredModel, ...MODELS.filter((m) => m !== preferredModel)];
   let lastError = "AI request failed.";
   let quotaError = "";
@@ -155,7 +155,11 @@ async function callGemini(
           temperature: opts?.temperature ?? 0.2,
           maxOutputTokens: maxTokens,
           ...(opts?.json ? { responseMimeType: "application/json" } : {}),
-          ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          ...(disableThinking
+            ? { thinkingConfig: { thinkingBudget: 0 } }
+            : opts?.quality
+              ? { thinkingConfig: { thinkingLevel: "LOW" } }
+              : {}),
         },
       };
       try {

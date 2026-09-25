@@ -75,7 +75,7 @@ ${input.typedText?.trim() ? `\nTyped / pasted paper text:\n${input.typedText.tri
   return chatJson(paperParseSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 4500, temperature: 0, quality: true });
+  ], { maxTokens: 6500, temperature: 0, quality: true });
 }
 
 export async function parseMarkScheme(input: {
@@ -129,7 +129,7 @@ ${input.typedText?.trim() ? `\nPasted mark scheme text:\n${input.typedText.trim(
   return chatJson(markSchemeParseSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 5000, temperature: 0, quality: true });
+  ], { maxTokens: 6500, temperature: 0, quality: true });
 }
 
 export async function markAgainstScheme(input: {
@@ -213,10 +213,18 @@ If later images are the official mark scheme pages, use them only as the scheme 
   content.push({ type: "text", text: "STUDENT SCRIPT PAGES follow this line. Mark only what is written here." });
   content.push(...imageParts(input.answerImages));
 
-  return chatJson(paperMarkSchema, [
+  const result = await chatJson(paperMarkSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 5000, temperature: 0, quality: true });
+  ], { maxTokens: 7500, temperature: 0, quality: true });
+  if (!result.ok) return result;
+  const hasDetailedMarking = result.data.questions.some((question) =>
+    question.points.length > 0 || question.method_comment.trim() || question.examiner_note.trim(),
+  );
+  if (!hasDetailedMarking) {
+    return { ok: false, error: "The AI returned only a score without a mark-by-mark explanation. No unreliable score was saved; please retry." };
+  }
+  return result;
 }
 
 export async function markCompletedScript(input: {
