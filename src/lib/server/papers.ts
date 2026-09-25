@@ -99,6 +99,19 @@ export const getMarkedPaper = createServerFn({ method: "GET" })
     });
   });
 
+export const deleteMarkedPaper = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: { id: string }) => input)
+  .handler(async ({ context, data }) => {
+    return withStudent(context.userId, displayNameFromContext(context), async (sql) => {
+      const deleted = await sql<{ id: string }>`delete from papers
+        where id = ${data.id} and user_id = ${context.userId}
+        returning id`;
+      if (!deleted.length) return { ok: false as const, error: "That marked paper was not found." };
+      return { ok: true as const };
+    });
+  });
+
 export const markPaper = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: {

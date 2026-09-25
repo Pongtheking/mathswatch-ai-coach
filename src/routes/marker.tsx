@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, FileText, Loader2, Repeat2, ScanSearch, Upload } from "lucide-react";
+import { ArrowRight, FileText, Loader2, Repeat2, ScanSearch, Upload, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { EstimateDisclaimer, PageHeader } from "@/components/layout/app-shell";
@@ -11,7 +11,7 @@ import { Card, CardHint, CardTitle } from "@/components/ui/card";
 import { EmptyState, ErrorBanner, NeedKeyBanner, WorkingOverlay } from "@/components/ui/feedback";
 import { AiKeyForm } from "@/components/ai-key-form";
 import { classifyPair, chunkPages, filesToPages, isPdfOrImage, type PageImage } from "@/lib/pdf";
-import { listMarkedPapers, markPaper } from "@/lib/server/papers";
+import { deleteMarkedPaper, listMarkedPapers, markPaper } from "@/lib/server/papers";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/marker")({
@@ -110,6 +110,19 @@ function MarkerPage() {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => deleteMarkedPaper({ data: { id } }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ["papers"] });
+      toast.success("Marked paper deleted.");
+    },
+    onError: () => toast.error("Could not delete that marked paper. Try again."),
+  });
+
   const ready = (paper.images.length > 0 || paper.text.length > 40) && (scheme.images.length > 0 || scheme.text.length > 40);
 
   const hasKey = Boolean(history.data?.aiAvailable);
@@ -144,6 +157,12 @@ function MarkerPage() {
     setPaper(scheme);
     setScheme(paper);
     setHint("Swapped. Check the two slots before marking.");
+  };
+
+  const deletePaper = (id: string, title: string) => {
+    if (window.confirm(`Delete “${title}”? This removes its saved marks and feedback and cannot be undone.`)) {
+      deleteMut.mutate(id);
+    }
   };
 
   return (
@@ -308,11 +327,11 @@ function MarkerPage() {
           <CardTitle>Marked papers</CardTitle>
           <ul className="mt-3 divide-y divide-border">
             {history.data.papers.map((p) => (
-              <li key={p.id}>
+              <li key={p.id} className="flex min-h-12 items-center gap-1">
                 <Link
                   to="/marker/$id"
                   params={{ id: p.id }}
-                  className="flex min-h-12 items-center justify-between gap-3 py-2"
+                  className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-3 py-2"
                 >
                   <span>
                     {p.title} <Badge className="ml-2">{p.status}</Badge>
@@ -323,6 +342,18 @@ function MarkerPage() {
                       : "—"}
                   </span>
                 </Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-fg-subtle hover:text-danger"
+                  aria-label={`Delete ${p.title}`}
+                  title={`Delete ${p.title}`}
+                  disabled={deleteMut.isPending}
+                  onClick={() => deletePaper(p.id, p.title)}
+                >
+                  <X className="size-4" />
+                </Button>
               </li>
             ))}
           </ul>
