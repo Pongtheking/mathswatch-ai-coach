@@ -103,27 +103,47 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
+/** Hobby/production Vercel hosts — Origin is `https://<project>.vercel.app`. */
+const VERCEL_HOST_WILDCARDS: string[] = ["*.vercel.app"];
+
+function vercelDeployOrigins(): string[] {
+  const out: string[] = [];
+  const add = (raw: string | undefined) => {
+    if (!raw) return;
+    const url = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+    out.push(url.replace(/\/+$/, ""));
+  };
+  add(env("VERCEL_URL"));
+  add(env("VERCEL_PROJECT_PRODUCTION_URL"));
+  add(env("VERCEL_BRANCH_URL"));
+  add(explicitBaseURL);
+  return [...new Set(out)];
+}
+
+const deployAllowedHosts: string[] = [
+  ...previewAllowedHosts,
+  ...VERCEL_HOST_WILDCARDS,
+  "localhost",
+  "127.0.0.1",
+  "[::1]",
+];
+
 const baseURL = explicitBaseURL ?? {
-  // Include loopback hosts so dynamic baseURL resolves for local email/password
-  // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
-  // `auto` → trust both http:// and https:// expansions of allowedHosts
-  // (preview is https; local dev is http).
+  allowedHosts: deployAllowedHosts,
   protocol: "auto" as const,
   fallback: "http://localhost:8080",
 };
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
-  : [
-      // Host wildcards (matched against Origin's host)
-      ...previewAllowedHosts,
-      // Full-origin wildcards (matched against Origin)
-      ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ...LOCAL_DEV_ORIGINS,
-    ];
+const trustedOrigins: string[] = [
+  ...previewAllowedHosts,
+  ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+  ...VERCEL_HOST_WILDCARDS,
+  ...VERCEL_HOST_WILDCARDS.map((host) => `https://${host}`),
+  ...LOCAL_DEV_ORIGINS,
+  ...vercelDeployOrigins(),
+];
 
 const databaseUrl = env("DATABASE_URL");
 
