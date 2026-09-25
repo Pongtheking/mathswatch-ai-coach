@@ -128,7 +128,7 @@ ${input.typedText?.trim() ? `\nPasted mark scheme text:\n${input.typedText.trim(
   return chatJson(markSchemeParseSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 8000, temperature: 0 });
+  ], { maxTokens: 5000, temperature: 0 });
 }
 
 export async function markAgainstScheme(input: {
@@ -215,7 +215,7 @@ If later images are the official mark scheme pages, use them only as the scheme 
   return chatJson(paperMarkSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 8000, temperature: 0 });
+  ], { maxTokens: 5000, temperature: 0 });
 }
 
 export async function markCompletedScript(input: {

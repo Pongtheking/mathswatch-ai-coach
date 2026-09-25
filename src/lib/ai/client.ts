@@ -1,7 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 
-const MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"] as const;
+// Flash-Lite is multimodal and supports structured output, while being aimed
+// at high-throughput document work. Starting here makes paper marking much
+// less likely to consume a student's limited free-tier allowance.
+const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"] as const;
 let preferredModel: string = MODELS[0];
 const keyAls = new AsyncLocalStorage<string>();
 
@@ -137,6 +140,7 @@ async function callGemini(
   const maxTokens = Math.max(opts?.maxTokens ?? 1800, opts?.json ? 4096 : 1200);
   const models = [preferredModel, ...MODELS.filter((m) => m !== preferredModel)];
   let lastError = "AI request failed.";
+  let quotaError = "";
 
   for (const model of models) {
     for (const disableThinking of [true, false]) {
@@ -162,11 +166,8 @@ async function callGemini(
           continue;
         }
         if (result.status === 429) {
-          return {
-            ok: false,
-            error:
-              "Google's free Gemini quota is currently exhausted for this key. Waiting a minute only helps with a short rate limit; if it happens again, wait for Google's quota reset before trying another mark.",
-          };
+          quotaError = "Google's free Gemini quota is currently exhausted for this key. Waiting a minute only helps with a short rate limit; if it happens again, wait for Google's quota reset before trying another mark.";
+          break;
         }
         if (result.status === 503) {
           await new Promise((r) => setTimeout(r, 700));
@@ -193,7 +194,7 @@ async function callGemini(
       }
     }
   }
-  return { ok: false, error: lastError };
+  return { ok: false, error: quotaError || lastError };
 }
 
 export async function probeGeminiKey(
