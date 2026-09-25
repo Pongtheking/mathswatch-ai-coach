@@ -26,3 +26,5 @@ No Gemini key is required on the server. Each student pastes their own Google AI
 npm install
 npm run dev
 ```
+
+Opens on port 8080.

@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@theme {
+  --font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --font-sans: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-card: var(--bg-elevated);
+  --color-card-fg: var(--fg);
+  --color-muted: var(--bg-subtle);
+  --color-muted-fg: var(--fg-muted);
+  --color-ring: var(--accent);
+  --color-input: var(--border);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-secondary: var(--bg-subtle);
+  --color-secondary-fg: var(--fg);
+  --color-destructive: var(--danger);
+  --color-popover: var(--bg-elevated);
+  --color-popover-fg: var(--fg);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius: 12px;
+
+  --shadow-card: 0 1px 0 color-mix(in oklab, var(--fg) 6%, transparent),
+    0 12px 32px -18px color-mix(in oklab, var(--fg) 18%, transparent);
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f4f1ea;
+  --bg-elevated: #fffcf7;
+  --bg-subtle: #ebe6db;
+  --fg: #16181d;
+  --fg-muted: #5a5f68;
+  --fg-subtle: #7a808a;
+  --border: color-mix(in oklab, var(--fg) 12%, transparent);
+  --border-strong: color-mix(in oklab, var(--fg) 22%, transparent);
+  --accent: #2c5f5a;
+  --accent-fg: #f4f1ea;
+  --primary: #16181d;
+  --primary-fg: #f4f1ea;
+  --ok: #2f6b4f;
+  --warn: #8a5a20;
+  --danger: #8f2f32;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0c0e12;
+  --bg-elevated: #151820;
+  --bg-subtle: #1c2029;
+  --fg: #ece8df;
+  --fg-muted: #a8adb6;
+  --fg-subtle: #7c838e;
+  --border: color-mix(in oklab, var(--fg) 12%, transparent);
+  --border-strong: color-mix(in oklab, var(--fg) 22%, transparent);
+  --accent: #7aa8a3;
+  --accent-fg: #0c0e12;
+  --primary: #ece8df;
+  --primary-fg: #0c0e12;
+  --ok: #7dba98;
+  --warn: #d4b07a;
+  --danger: #d9898b;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .katex {
+    font-size: 1.05em;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake-once {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes pop-ok {
+  0% {
+    transform: scale(0.97);
+  }
+  55% {
+    transform: scale(1.015);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.page-enter {
+  animation: page-enter 220ms ease-out both;
+}
+
+.shake-once {
+  animation: shake-once 380ms ease-out;
+}
+
+.pop-ok {
+  animation: pop-ok 420ms ease-out;
+}
+
+.ink-shell,
+.ink-surface,
+.ink-surface canvas {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  caret-color: transparent;
+}
+
+.ink-surface {
+  touch-action: none !important;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  cursor: crosshair;
+  -webkit-user-drag: none;
+  background: #ffffff;
+}
+
+.ink-shell {
+  background: #ffffff;
+}
+
+body.ink-lock,
+body.ink-lock * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.ink-dock {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .shake-once,
+  .pop-ok {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

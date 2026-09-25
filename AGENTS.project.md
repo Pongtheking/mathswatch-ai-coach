@@ -37,7 +37,7 @@ such.
 ## Stack (already chosen)
 
 TanStack Start (Vite) · Postgres / PGLite · Better Auth (email + Grok providers)
-· Gemini Flash for vision/LLM · KaTeX · iPad-first dark academic UI.
+· xAI Grok for vision/LLM · KaTeX · iPad-first dark academic UI.
 
 Auth and the database are **on**. Every per-user server function uses
 `authMiddleware` and scopes by `context.userId`.
@@ -75,7 +75,7 @@ Pipeline (server, user-initiated only):
    extra marks. Flag unreadable working as needs-review.
 
 Persist results on `papers` / `paper_questions` / `paper_mark_points` /
-`paper_question_marks`. Feed mistakes into mastery. If `GEMINI_API_KEY` is missing,
+`paper_question_marks`. Feed mistakes into mastery. If `XAI_API_KEY` is missing,
 show a clean "AI is not available" state — never crash, never fake marks.
 
 Require a rights/copyright confirmation before marking.
