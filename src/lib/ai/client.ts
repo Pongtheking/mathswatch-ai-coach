@@ -132,13 +132,15 @@ async function postGemini(
 
 async function callGemini(
   messages: ChatMessage[],
-  opts?: { maxTokens?: number; temperature?: number; json?: boolean },
+  opts?: { maxTokens?: number; temperature?: number; json?: boolean; quality?: boolean },
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   const apiKey = getGeminiApiKey();
   if (!apiKey) return { ok: false, error: NEED_AI_KEY };
   const { contents, systemInstruction } = toGeminiRequest(messages);
   const maxTokens = Math.max(opts?.maxTokens ?? 1800, opts?.json ? 4096 : 1200);
-  const models = [preferredModel, ...MODELS.filter((m) => m !== preferredModel)];
+  const models = opts?.quality
+    ? [...MODELS.filter((m) => m !== "gemini-3.5-flash-lite"), "gemini-3.5-flash-lite"]
+    : [preferredModel, ...MODELS.filter((m) => m !== preferredModel)];
   let lastError = "AI request failed.";
   let quotaError = "";
 
@@ -236,7 +238,7 @@ export async function probeGeminiKey(
 export async function chatJson<T>(
   schema: z.ZodType<T>,
   messages: ChatMessage[],
-  opts?: { maxTokens?: number; temperature?: number },
+  opts?: { maxTokens?: number; temperature?: number; quality?: boolean },
 ): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
   const first = await callGemini(messages, { ...opts, json: true });
   if (first.ok) {

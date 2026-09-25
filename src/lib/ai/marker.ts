@@ -102,6 +102,7 @@ Return JSON:
       "notes": "any examiner notes / extra info",
       "points": [
         {
+          "id": "1a-1",
           "question_ref": "1a",
           "code": "M1",
           "description": "exact mark-scheme wording",
@@ -120,7 +121,7 @@ Return JSON:
   "confidence": 0.0
 }
 
-If two methods are alternatives, give them the same alternative_group (e.g. "altA").
+Give every point a stable unique id made from its question reference and position (for example "1a-1", "1a-2"). If two methods are alternatives, give them the same alternative_group (e.g. "altA").
 ${input.typedText?.trim() ? `\nPasted mark scheme text:\n${input.typedText.trim().slice(0, 100000)}` : ""}`,
     },
     ...imageParts(input.images),
@@ -170,7 +171,7 @@ Return JSON:
       "awarded": 0,
       "max_marks": 0,
       "points": [
-        { "code": "M1", "awarded": true, "evidence": "quote from script", "reason": "why awarded/not", "unsure": false }
+        { "point_id": "1a-1", "code": "M1", "awarded": true, "evidence": "quote from script", "reason": "why awarded/not", "unsure": false }
       ],
       "student_answer_summary": "",
       "method_comment": "",
@@ -199,7 +200,7 @@ Return JSON:
   "warnings": []
 }
 
-Every mark point on the scheme must appear for questions that are visible on these pages. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
+Every mark point on the scheme must appear for questions that are visible on these pages. Copy each point_id exactly from the parsed mark scheme; do not use a label such as M1/A1 by itself because labels can repeat. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
 If a question is clearly not on these pages, omit it rather than marking it zero.
 If later images are the official mark scheme pages, use them only as the scheme — never as the student's work.`,
     },
@@ -215,7 +216,7 @@ If later images are the official mark scheme pages, use them only as the scheme 
   return chatJson(paperMarkSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 5000, temperature: 0 });
+  ], { maxTokens: 5000, temperature: 0, quality: true });
 }
 
 export async function markCompletedScript(input: {
@@ -264,7 +265,7 @@ export async function markCompletedScript(input: {
     if (parsed.ok) paper = parsed.data;
   }
 
-  scheme = reconcileSchemeWithPaper(scheme, paper);
+  scheme = withPointIds(reconcileSchemeWithPaper(scheme, paper));
 
   const questions =
     scheme.questions.length > 0
@@ -279,7 +280,7 @@ export async function markCompletedScript(input: {
           marks: q.marks,
         })) ?? [];
 
-  const batches = chunk(input.paperImages, 8, 1);
+  const batches = chunk(input.paperImages, 3, 1);
   const imageBatches = batches.length ? batches : [[]];
   const marks: PaperMark[] = [];
   let incompleteWarning = "";
@@ -364,12 +365,12 @@ function mergeSchemes(parts: MarkSchemeParse[]): MarkSchemeParse {
   const questions = [...byRef.values()].sort((a, b) =>
     a.ref.localeCompare(b.ref, undefined, { numeric: true }),
   );
-  return {
+  return withPointIds({
     questions,
     general_notes: unique(notes),
     warnings: unique(warnings),
     confidence,
-  };
+  });
 }
 
 export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): PaperMark {
@@ -399,6 +400,7 @@ export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): P
         awarded: 0,
         max_marks: source.max_marks,
         points: source.points.map((point) => ({
+          point_id: point.id,
           code: point.code,
           awarded: false,
           evidence: "",
@@ -464,6 +466,19 @@ function reconcileSchemeWithPaper(scheme: MarkSchemeParse, paper: PaperParse | n
   };
 }
 
+function withPointIds(scheme: MarkSchemeParse): MarkSchemeParse {
+  return {
+    ...scheme,
+    questions: scheme.questions.map((question) => ({
+      ...question,
+      points: question.points.map((point, index) => ({
+        ...point,
+        id: point.id.trim() || `${question.ref.trim()}-${index + 1}`,
+      })),
+    })),
+  };
+}
+
 function questionWeight(q: PaperMark["questions"][number]): number {
   const evidence = q.points.filter((p) => p.evidence.trim()).length;
   const summary = q.student_answer_summary.trim() ? 2 : 0;
@@ -492,12 +507,23 @@ function normaliseTotals(mark: PaperMark, scheme?: MarkSchemeParse): PaperMark {
   const expected = schemeQuestions(scheme);
   const questions = mark.questions.map((q) => {
     const official = expected.get(q.question_ref.trim());
-    const officialPoints = new Map((official?.points ?? []).map((point) => [point.code, point]));
+    const officialPoints = new Map((official?.points ?? []).map((point) => [point.id, point]));
+    const pointsByCode = new Map<string, MarkSchemeParse["questions"][number]["points"]>();
+    for (const point of official?.points ?? []) {
+      const matches = pointsByCode.get(point.code) ?? [];
+      matches.push(point);
+      pointsByCode.set(point.code, matches);
+    }
+    const usedPointIds = new Set<string>();
     const awardedGroups = new Set<string>();
     const fromPoints = q.points.reduce((sum, point) => {
       if (!point.awarded) return sum;
-      const source = officialPoints.get(point.code);
+      const source = point.point_id
+        ? officialPoints.get(point.point_id)
+        : pointsByCode.get(point.code)?.find((candidate) => !usedPointIds.has(candidate.id));
       if (!source) return sum;
+      if (usedPointIds.has(source.id)) return sum;
+      usedPointIds.add(source.id);
       const group = source.alternative_group;
       if (group && awardedGroups.has(group)) return sum;
       if (group) awardedGroups.add(group);

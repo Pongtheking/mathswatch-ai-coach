@@ -103,6 +103,7 @@ export const paperParseSchema = z.object({
 export type PaperParse = z.infer<typeof paperParseSchema>;
 
 export const markPointParseSchema = z.object({
+  id: z.string().catch(""),
   question_ref: z.string(),
   code: z.string(),
   description: z.string(),
@@ -132,6 +133,7 @@ export const markSchemeParseSchema = z.object({
 export type MarkSchemeParse = z.infer<typeof markSchemeParseSchema>;
 
 export const markedPointSchema = z.object({
+  point_id: z.string().catch(""),
   code: z.string(),
   awarded: z.boolean(),
   evidence: z.string().default(""),
