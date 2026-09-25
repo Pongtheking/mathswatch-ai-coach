@@ -192,6 +192,21 @@ function weightOf(s: GradeSkillInput): number {
   return Math.max(0.4, (s.relevance / 10) * 0.5 + (s.examFreq / 10) * 0.5) * higher * algebra;
 }
 
+/**
+ * One correct answer is a useful signal, but it is not proof of secure GCSE
+ * mastery. Grade estimates therefore earn evidence gradually: three attempts
+ * are enough to count a skill in full, while the first two are blended with
+ * the conservative unseen-skill baseline.
+ */
+function evidenceStrength(s: GradeSkillInput): number {
+  return s.score !== null && s.attempts > 0 ? clamp(s.attempts / 3, 0, 1) : 0;
+}
+
+function evidenceAdjustedScore(s: GradeSkillInput, unseenScore: number): number {
+  const strength = evidenceStrength(s);
+  return unseenScore + ((s.score ?? unseenScore) - unseenScore) * strength;
+}
+
 export function estimateGrade(skills: GradeSkillInput[]): GradeEstimate {
   const empty: GradeEstimate = {
     estimate: null,
@@ -217,9 +232,9 @@ export function estimateGrade(skills: GradeSkillInput[]): GradeEstimate {
   for (const s of skills) {
     const w = weightOf(s);
     totalW += w;
-    const known = s.score !== null && s.attempts > 0;
-    if (known) assessedW += w;
-    paper += (known ? (s.score as number) : UNASSESSED) * w;
+    const strength = evidenceStrength(s);
+    if (strength > 0) assessedW += w * strength;
+    paper += evidenceAdjustedScore(s, UNASSESSED) * w;
   }
   const coverage = totalW > 0 ? assessedW / totalW : 0;
   const paperPct = totalW > 0 ? paper / totalW : 0;
@@ -229,7 +244,7 @@ export function estimateGrade(skills: GradeSkillInput[]): GradeEstimate {
   const higherReady =
     higher.length === 0
       ? 0
-      : higher.reduce((a, s) => a + (s.score !== null && s.attempts > 0 ? s.score : UNASSESSED), 0) /
+      : higher.reduce((a, s) => a + evidenceAdjustedScore(s, UNASSESSED), 0) /
         higher.length;
 
   const algebra = skills.filter((s) => s.category === "Algebra");
@@ -237,7 +252,7 @@ export function estimateGrade(skills: GradeSkillInput[]): GradeEstimate {
   const algebraReady =
     algebra.length === 0
       ? 0
-      : algebra.reduce((a, s) => a + (s.score !== null && s.attempts > 0 ? s.score : UNASSESSED), 0) /
+      : algebra.reduce((a, s) => a + evidenceAdjustedScore(s, UNASSESSED), 0) /
         algebra.length;
 
   const strandNames = [...new Set(skills.map((s) => s.category ?? "Other"))];

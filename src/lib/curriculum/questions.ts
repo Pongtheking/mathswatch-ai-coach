@@ -729,4 +729,174 @@ export const BANK_QUESTIONS: BankQuestion[] = [
     commandWords: ["Find"],
     commonMistakes: ["Using 3n only"],
   },
+  // Additional calibrated GCSE questions. Each strand includes a deliberate
+  // progression from secure method to higher-tier application and proof.
+  {
+    id: "q-num-012", prompt: "Work out -7 + 12 - 9.", marks: 1, answer: "-4",
+    solution: "-7 + 12 = 5, then 5 - 9 = -4.", skillIds: ["num.negatives", "num.order-ops"], topicId: "number", difficulty: 3, calculator: false, type: "short", commandWords: ["Work out"], commonMistakes: ["Treating -7 + 12 as -19"],
+  },
+  {
+    id: "q-num-013", prompt: "Write 0.375 as a fraction in its simplest form.", marks: 2, answer: "3/8",
+    solution: "0.375 = 375/1000. Divide top and bottom by 125 to get 3/8.", skillIds: ["num.decimals", "num.fdp", "num.fractions"], topicId: "number", difficulty: 4, calculator: false, type: "short", commandWords: ["Write"], commonMistakes: ["Writing 375/100"],
+  },
+  {
+    id: "q-num-014", prompt: "A jacket costs £68 after a 15% discount. Find its original price.", marks: 3, answer: "80|£80",
+    solution: "After a 15% discount, 85% remains. Original price = 68 / 0.85 = 80.", skillIds: ["num.reverse-percentages", "num.percentages"], topicId: "number", difficulty: 6, calculator: true, type: "structured", commandWords: ["Find"], commonMistakes: ["Taking 15% of 68"],
+  },
+  {
+    id: "q-num-015", prompt: "Convert 0.1̇6̇ (0.1666...) to a fraction in its simplest form.", marks: 3, answer: "1/6",
+    solution: "Let x=0.1666... Then 10x=1.666... and 100x=16.666.... Subtract to get 90x=15, so x=1/6.", skillIds: ["num.recurring-decimals"], topicId: "number", difficulty: 6, calculator: false, type: "structured", commandWords: ["Convert"], commonMistakes: ["Using 1/9"],
+  },
+  {
+    id: "q-num-016", prompt: "The mass of a parcel is 2.4 kg, correct to the nearest 0.1 kg. Find the upper bound for its density if its volume is 0.30 m³, correct to the nearest 0.01 m³.", marks: 4, answer: "8.275862...|8.28",
+    solution: "For maximum density use maximum mass and minimum volume: 2.45 / 0.295 = 8.275862..., so 8.28 kg/m³ to 3 s.f.", skillIds: ["num.error-intervals", "num.bounds"], topicId: "number", difficulty: 8, calculator: true, type: "structured", commandWords: ["Find"], commonMistakes: ["Using both upper bounds"],
+  },
+  {
+    id: "q-num-017", prompt: "Estimate the value of (19.8 × 0.49) / 4.1.", marks: 2, answer: "2.5|about 2.5",
+    solution: "Use 20 × 0.5 / 4 = 10/4 = 2.5.", skillIds: ["num.estimation"], topicId: "number", difficulty: 4, calculator: false, type: "short", commandWords: ["Estimate"], commonMistakes: ["Trying to calculate exactly"],
+  },
+  {
+    id: "q-alg-018", prompt: "Expand and simplify (2x - 3)(x + 4).", marks: 2, answer: "2x^2+5x-12|2x^2 + 5x - 12",
+    solution: "2x² + 8x - 3x - 12 = 2x² + 5x - 12.", skillIds: ["alg.expanding-double"], topicId: "algebra", difficulty: 4, calculator: false, type: "short", commandWords: ["Expand"], commonMistakes: ["Missing the middle terms"],
+  },
+  {
+    id: "q-alg-019", prompt: "Factorise fully 6x² - 15x.", marks: 2, answer: "3x(2x-5)|3x(2x - 5)",
+    solution: "The highest common factor is 3x, leaving 2x - 5.", skillIds: ["alg.factorising-linear"], topicId: "algebra", difficulty: 4, calculator: false, type: "short", commandWords: ["Factorise"], commonMistakes: ["Factoring out 3 only"],
+  },
+  {
+    id: "q-alg-020", prompt: "Find the equation of the line through (2, 5) and (6, 13).", marks: 3, answer: "y=2x+1|y = 2x + 1",
+    solution: "Gradient=(13-5)/(6-2)=2. Using (2,5): 5=4+c, so c=1.", skillIds: ["alg.equation-of-line"], topicId: "algebra", difficulty: 5, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Using 5 as the intercept"],
+  },
+  {
+    id: "q-alg-021", prompt: "The line y = -3x + 7 is perpendicular to a line through (4, 1). Find the equation of the perpendicular line.", marks: 3, answer: "y=1/3x-1/3|y = (1/3)x - 1/3",
+    solution: "A perpendicular gradient is 1/3. Using (4,1): 1=4/3+c, so c=-1/3.", skillIds: ["alg.parallel-perpendicular"], topicId: "algebra", difficulty: 7, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Using gradient -1/3"],
+  },
+  {
+    id: "q-alg-022", prompt: "Solve x² - x - 6 > 0.", marks: 3, answer: "x<-2 or x>3|x < -2 or x > 3",
+    solution: "(x-3)(x+2)>0. The product is positive outside the roots, so x<-2 or x>3.", skillIds: ["alg.quadratic-inequalities", "alg.factorising-quadratic"], topicId: "algebra", difficulty: 8, calculator: false, type: "structured", commandWords: ["Solve"], commonMistakes: ["Giving -2 < x < 3"],
+  },
+  {
+    id: "q-alg-023", prompt: "Prove that (n + 1)² - (n - 1)² is divisible by 4 for every integer n.", marks: 4, answer: "4n",
+    solution: "Expand: n²+2n+1 - (n²-2n+1) = 4n. Since n is an integer, 4n is divisible by 4.", skillIds: ["alg.identities", "alg.proof"], topicId: "algebra", difficulty: 8, calculator: false, type: "proof", commandWords: ["Prove"], commonMistakes: ["Only checking one value of n"],
+  },
+  {
+    id: "q-rat-005", prompt: "A recipe for 6 people uses 450 g of flour. How much flour is needed for 14 people?", marks: 2, answer: "1050|1050g|1050 g",
+    solution: "450 ÷ 6 = 75 g per person. 75 × 14 = 1050 g.", skillIds: ["rat.recipes", "num.ratio"], topicId: "ratio", difficulty: 3, calculator: false, type: "short", commandWords: ["How much"], commonMistakes: ["Multiplying 450 by 14"],
+  },
+  {
+    id: "q-rat-006", prompt: "On a map with scale 1:25 000, two towns are 7.6 cm apart. Find the real distance in km.", marks: 3, answer: "1.9|1.9km|1.9 km",
+    solution: "7.6 × 25 000 = 190 000 cm = 1.9 km.", skillIds: ["rat.scale-drawings"], topicId: "ratio", difficulty: 5, calculator: true, type: "structured", commandWords: ["Find"], commonMistakes: ["Giving 190 km"],
+  },
+  {
+    id: "q-rat-007", prompt: "y is directly proportional to x². When x=3, y=45. Find y when x=5.", marks: 3, answer: "125",
+    solution: "y=kx². 45=9k, so k=5. When x=5, y=5×25=125.", skillIds: ["rat.direct-proportion"], topicId: "ratio", difficulty: 6, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Using y=15x"],
+  },
+  {
+    id: "q-rat-008", prompt: "A force of 720 N acts on an area of 0.18 m². Calculate the pressure.", marks: 2, answer: "4000|4000Pa|4000 Pa",
+    solution: "Pressure = force ÷ area = 720 ÷ 0.18 = 4000 Pa.", skillIds: ["rat.pressure"], topicId: "ratio", difficulty: 5, calculator: true, type: "short", commandWords: ["Calculate"], commonMistakes: ["Multiplying force by area"],
+  },
+  {
+    id: "q-rat-009", prompt: "£300 is exchanged for euros at £1 = €1.16. The euros are changed back at £1 = €1.20. How many pounds are received?", marks: 3, answer: "290|£290",
+    solution: "€300×1.16 = €348. At €1.20 per £, pounds = 348 ÷ 1.20 = 290.", skillIds: ["rat.currency"], topicId: "ratio", difficulty: 6, calculator: true, type: "structured", commandWords: ["How many"], commonMistakes: ["Multiplying by 1.20 on the return"],
+  },
+  {
+    id: "q-rat-010", prompt: "Pack A has 750 g of cereal for £2.70. Pack B has 1.2 kg for £4.08. Which is the better buy?", marks: 3, answer: "Pack B|B",
+    solution: "A: £2.70 ÷ 0.75 = £3.60/kg. B: £4.08 ÷ 1.2 = £3.40/kg, so B is the better buy.", skillIds: ["rat.best-buys"], topicId: "ratio", difficulty: 5, calculator: true, type: "structured", commandWords: ["Which"], commonMistakes: ["Comparing packet prices only"],
+  },
+  {
+    id: "q-geo-011", prompt: "Two angles of a triangle are 48° and 67°. Find the third angle.", marks: 1, answer: "65|65°",
+    solution: "Angles in a triangle total 180°. 180 - 48 - 67 = 65°.", skillIds: ["geo.angles"], topicId: "geometry", difficulty: 3, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Adding the angles"],
+  },
+  {
+    id: "q-geo-012", prompt: "Calculate the area of a trapezium with parallel sides 8 cm and 14 cm and height 6 cm.", marks: 2, answer: "66|66cm^2|66 cm²",
+    solution: "Area = ½(8+14)×6 = 66 cm².", skillIds: ["geo.area"], topicId: "geometry", difficulty: 4, calculator: false, type: "short", commandWords: ["Calculate"], commonMistakes: ["Using 8×14×6"],
+  },
+  {
+    id: "q-geo-013", prompt: "A ship travels on a bearing of 135° from A. State the bearing of A from the ship.", marks: 2, answer: "315|315°",
+    solution: "Reverse bearings differ by 180°. 135 + 180 = 315°.", skillIds: ["geo.bearings"], topicId: "geometry", difficulty: 5, calculator: false, type: "short", commandWords: ["State"], commonMistakes: ["Giving 045°"],
+  },
+  {
+    id: "q-geo-014", prompt: "A cone has radius 3 cm and vertical height 8 cm. Calculate its volume in terms of π.", marks: 3, answer: "24π|24pi|24 π",
+    solution: "Volume = (1/3)πr²h = (1/3)π×9×8 = 24π cm³.", skillIds: ["geo.cones-spheres", "geo.volume"], topicId: "geometry", difficulty: 6, calculator: false, type: "structured", commandWords: ["Calculate"], commonMistakes: ["Using πr²h without dividing by 3"],
+  },
+  {
+    id: "q-geo-015", prompt: "Two similar solids have length scale factor 3. The smaller solid has volume 40 cm³. Find the volume of the larger solid.", marks: 3, answer: "1080|1080cm^3|1080 cm³",
+    solution: "Volume scale factor = 3³ = 27. 40×27 = 1080 cm³.", skillIds: ["geo.similar-area-volume", "geo.similarity"], topicId: "geometry", difficulty: 7, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Multiplying by 3"],
+  },
+  {
+    id: "q-geo-016", prompt: "In triangle ABC, a=7, b=10 and angle C=48°. Calculate the area of the triangle to 1 d.p.", marks: 3, answer: "26.0|26cm^2|26.0cm^2",
+    solution: "Area = ½ab sin C = ½×7×10×sin48° = 26.0 cm² to 1 d.p.", skillIds: ["geo.triangle-area-trig"], topicId: "geometry", difficulty: 7, calculator: true, type: "structured", commandWords: ["Calculate"], commonMistakes: ["Using cos 48°"],
+  },
+  {
+    id: "q-pro-005", prompt: "A bag has 5 red, 3 blue and 2 green counters. Find P(blue or green).", marks: 1, answer: "1/2|0.5",
+    solution: "There are 3+2=5 blue or green counters out of 10, so 5/10=1/2.", skillIds: ["pro.sample-spaces", "pro.basic"], topicId: "probability", difficulty: 3, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Adding 3/10 and 2/10 incorrectly"],
+  },
+  {
+    id: "q-pro-006", prompt: "Of 120 bulbs tested, 9 are faulty. Estimate how many faulty bulbs there will be in a batch of 800.", marks: 2, answer: "60",
+    solution: "Relative frequency = 9/120 = 0.075. 0.075×800 = 60.", skillIds: ["pro.relative-frequency"], topicId: "probability", difficulty: 4, calculator: false, type: "short", commandWords: ["Estimate"], commonMistakes: ["Using 9/800"],
+  },
+  {
+    id: "q-pro-007", prompt: "A spinner has P(red)=0.4. It is spun twice. Find P(red both times).", marks: 2, answer: "0.16|16/100|4/25",
+    solution: "The spins are independent, so 0.4×0.4=0.16.", skillIds: ["pro.independent"], topicId: "probability", difficulty: 5, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Adding 0.4 + 0.4"],
+  },
+  {
+    id: "q-pro-008", prompt: "Complete a frequency tree: 80 students; 46 study French; 21 of the French students also study Spanish; 18 students study neither. How many study Spanish only?", marks: 3, answer: "16",
+    solution: "Students studying at least one = 80-18=62. French only = 46-21=25. Spanish only = 62-25-21=16.", skillIds: ["pro.frequency-trees"], topicId: "probability", difficulty: 6, calculator: false, type: "structured", commandWords: ["How many"], commonMistakes: ["Forgetting to remove neither"],
+  },
+  {
+    id: "q-pro-009", prompt: "Two fair six-sided dice are rolled. Find the probability that the total is greater than 9.", marks: 3, answer: "1/6|6/36",
+    solution: "Totals greater than 9 are 10 (3 ways), 11 (2 ways), 12 (1 way): 6 of 36, so 1/6.", skillIds: ["pro.sample-spaces"], topicId: "probability", difficulty: 6, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Counting 9 as greater than 9"],
+  },
+  {
+    id: "q-pro-010", prompt: "A biased coin has P(head)=p. It is tossed twice. Given that the probability of two heads is 0.49, find p.", marks: 2, answer: "0.7",
+    solution: "p²=0.49, so p=0.7 because a probability is non-negative.", skillIds: ["pro.independent"], topicId: "probability", difficulty: 7, calculator: false, type: "structured", commandWords: ["Find"], commonMistakes: ["Giving ±0.7"],
+  },
+  {
+    id: "q-sta-004", prompt: "The values are 4, 7, 7, 9, 13. Find the median and the range.", marks: 2, answer: "median 7, range 9|7 and 9",
+    solution: "The middle value is 7. Range = 13-4=9.", skillIds: ["sta.averages"], topicId: "statistics", difficulty: 3, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Using the mean for median"],
+  },
+  {
+    id: "q-sta-005", prompt: "A class has 12 boys and 18 girls. A stratified sample of 15 is taken. How many girls should be selected?", marks: 2, answer: "9",
+    solution: "Girls: 18/30 × 15 = 9.", skillIds: ["sta.stratified", "sta.sampling"], topicId: "statistics", difficulty: 4, calculator: false, type: "short", commandWords: ["How many"], commonMistakes: ["Taking half of 15"],
+  },
+  {
+    id: "q-sta-006", prompt: "The grouped table has intervals 0<x≤10 (frequency 4), 10<x≤20 (frequency 7), 20<x≤30 (frequency 9). Estimate the mean.", marks: 3, answer: "17.5",
+    solution: "Use midpoints 5,15,25. Sum fx=20+105+225=350; total f=20; estimate=350/20=17.5.", skillIds: ["sta.grouped-data"], topicId: "statistics", difficulty: 5, calculator: false, type: "structured", commandWords: ["Estimate"], commonMistakes: ["Using class boundaries instead of midpoints"],
+  },
+  {
+    id: "q-sta-007", prompt: "The lower quartile of a data set is 12 and the upper quartile is 27. Find the interquartile range.", marks: 1, answer: "15",
+    solution: "IQR = upper quartile - lower quartile = 27-12=15.", skillIds: ["sta.box-plots"], topicId: "statistics", difficulty: 5, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Adding the quartiles"],
+  },
+  {
+    id: "q-sta-008", prompt: "On a cumulative frequency graph, the total frequency is 80. The readings at the lower and upper quartiles are 23 and 51. Estimate the interquartile range.", marks: 3, answer: "28",
+    solution: "Lower quartile is at cumulative frequency 20 and upper quartile at 60. IQR=51-23=28.", skillIds: ["sta.cumulative-frequency"], topicId: "statistics", difficulty: 6, calculator: false, type: "structured", commandWords: ["Estimate"], commonMistakes: ["Using 40 and 80 for quartiles"],
+  },
+  {
+    id: "q-sta-009", prompt: "In a capture-recapture study, 40 fish are marked and released. Later 50 fish are caught and 10 are marked. Estimate the fish population.", marks: 3, answer: "200",
+    solution: "40/N = 10/50, so 10N=2000 and N=200.", skillIds: ["sta.capture-recapture"], topicId: "statistics", difficulty: 6, calculator: false, type: "structured", commandWords: ["Estimate"], commonMistakes: ["Adding 40 and 50"],
+  },
+  {
+    id: "q-gra-004", prompt: "For y = 2x³ - 3x, find y when x=-2.", marks: 2, answer: "-10",
+    solution: "2(-2)³ - 3(-2) = -16 + 6 = -10.", skillIds: ["gra.cubic"], topicId: "graphs", difficulty: 4, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["-16-6"],
+  },
+  {
+    id: "q-gra-005", prompt: "The graph y=3/x passes through a point with x=-6. Find its y-coordinate.", marks: 1, answer: "-1/2|-0.5",
+    solution: "y=3/-6=-1/2.", skillIds: ["gra.reciprocal"], topicId: "graphs", difficulty: 4, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["1/2"],
+  },
+  {
+    id: "q-gra-006", prompt: "The population of bacteria is modelled by P=500×1.08^t. Find P when t=3, to the nearest whole number.", marks: 2, answer: "630|630",
+    solution: "P=500×1.08³=629.856, so 630.", skillIds: ["gra.exponential"], topicId: "graphs", difficulty: 5, calculator: true, type: "short", commandWords: ["Find"], commonMistakes: ["500×1.24"],
+  },
+  {
+    id: "q-gra-007", prompt: "A velocity-time graph shows a constant velocity of 12 m/s for 25 seconds. Find the distance travelled.", marks: 2, answer: "300|300m|300 m",
+    solution: "Distance is the area under the graph: 12×25=300 m.", skillIds: ["gra.velocity-time", "gra.area-under"], topicId: "graphs", difficulty: 5, calculator: false, type: "short", commandWords: ["Find"], commonMistakes: ["Giving 12 m/s"],
+  },
+  {
+    id: "q-gra-008", prompt: "Solve x² - x - 2 = 0 graphically. Give the x-values where y=x²-x-2 crosses the x-axis.", marks: 2, answer: "-1 and 2|x=-1, x=2",
+    solution: "The roots are the x-intercepts. x²-x-2=(x-2)(x+1), so x=-1 and x=2.", skillIds: ["gra.solving-graphically", "gra.quadratic"], topicId: "graphs", difficulty: 6, calculator: false, type: "structured", commandWords: ["Solve"], commonMistakes: ["Giving the y-intercept -2"],
+  },
+  {
+    id: "q-gra-009", prompt: "State the period of y=sin x for 0°≤x≤360°, and give y when x=90°.", marks: 2, answer: "360 and 1|360°, 1",
+    solution: "The sine graph repeats every 360°, and sin90°=1.", skillIds: ["gra.trig-graphs", "geo.exact-trig"], topicId: "graphs", difficulty: 7, calculator: false, type: "short", commandWords: ["State"], commonMistakes: ["Period 180°"],
+  },
 ];
