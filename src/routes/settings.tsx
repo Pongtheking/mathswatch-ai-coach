@@ -17,9 +17,9 @@ function SettingsPage() {
   const boot = useQuery({ queryKey: ["bootstrap"], queryFn: () => getBootstrap() });
   const assigns = useQuery({ queryKey: ["assignments"], queryFn: () => listAssignments() });
   const p = boot.data?.profile;
-  const [name, setName] = useState("");
-  const [board, setBoard] = useState("AQA");
-  const [minutes, setMinutes] = useState(180);
+  const [name, setName] = useState<string | null>(null);
+  const [board, setBoard] = useState<string | null>(null);
+  const [minutes, setMinutes] = useState<number | null>(null);
   const [csv, setCsv] = useState("title,topic,score,percent\nClip 1 Quadratics,Quadratics,6/10,60");
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
@@ -31,6 +31,7 @@ function SettingsPage() {
       toast.success("Saved");
       qc.invalidateQueries({ queryKey: ["bootstrap"] });
     },
+    onError: (error) => toast.error(error.message || "Could not save your profile. Please try again."),
   });
   const add = useMutation({
     mutationFn: addAssignment,
@@ -39,6 +40,7 @@ function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["assignments"] });
       setTitle("");
     },
+    onError: (error) => toast.error(error.message || "Could not log that result. Please try again."),
   });
   const imp = useMutation({
     mutationFn: importResults,
@@ -47,6 +49,7 @@ function SettingsPage() {
       else toast.success(`Imported ${res.imported} rows`);
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
+    onError: (error) => toast.error(error.message || "Could not import those results. Please try again."),
   });
 
   return (
@@ -62,14 +65,14 @@ function SettingsPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div>
             <Label htmlFor="dn">Display name</Label>
-            <Input id="dn" defaultValue={p?.display_name} onChange={(e) => setName(e.target.value)} />
+            <Input id="dn" value={name ?? p?.display_name ?? ""} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
             <Label htmlFor="board">Exam board</Label>
             <select
               id="board"
               className="h-11 w-full rounded-[10px] border border-border bg-bg px-3"
-              defaultValue={p?.exam_board}
+              value={board ?? p?.exam_board ?? "unspecified"}
               onChange={(e) => setBoard(e.target.value)}
             >
               <option value="unspecified">Not set</option>
@@ -83,8 +86,9 @@ function SettingsPage() {
             <Input
               id="mins"
               type="number"
-              defaultValue={p?.weekly_minutes_goal}
-              onChange={(e) => setMinutes(Number(e.target.value))}
+              min={0}
+              value={minutes ?? p?.weekly_minutes_goal ?? 180}
+              onChange={(e) => setMinutes(Math.max(0, Number(e.target.value) || 0))}
             />
           </div>
         </div>
@@ -94,15 +98,15 @@ function SettingsPage() {
           onClick={() =>
             save.mutate({
               data: {
-                displayName: name || p?.display_name,
-                examBoard: board,
-                weeklyMinutes: minutes,
+                displayName: name ?? p?.display_name,
+                examBoard: board ?? p?.exam_board ?? "unspecified",
+                weeklyMinutes: minutes ?? p?.weekly_minutes_goal ?? 180,
                 onboardingComplete: true,
               },
             })
           }
         >
-          Save profile
+          {save.isPending ? "Saving…" : "Save profile"}
         </Button>
       </Card>
 
@@ -117,10 +121,10 @@ function SettingsPage() {
         <Button
           className="mt-3"
           variant="outline"
-          disabled={!title}
+          disabled={!title || add.isPending}
           onClick={() => add.mutate({ data: { title, topic, scoreRaw: score, provider: "manual" } })}
         >
-          Log result
+          {add.isPending ? "Logging…" : "Log result"}
         </Button>
       </Card>
 
@@ -128,8 +132,8 @@ function SettingsPage() {
         <CardTitle>Import CSV</CardTitle>
         <CardHint>Provider: Import. Columns: title, topic, score, percent. No passwords. No scraping.</CardHint>
         <Textarea className="mt-3 font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} />
-        <Button className="mt-3" variant="outline" onClick={() => imp.mutate({ data: { csv } })}>
-          Import
+        <Button className="mt-3" variant="outline" disabled={imp.isPending} onClick={() => imp.mutate({ data: { csv } })}>
+          {imp.isPending ? "Importing…" : "Import"}
         </Button>
       </Card>
 

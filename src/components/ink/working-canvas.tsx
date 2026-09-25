@@ -140,8 +140,6 @@ export const WorkingCanvas = forwardRef<WorkingCanvasHandle, Props>(function Wor
     });
   }, [onInkChange, storageKey]);
 
-  const css = () => getComputedStyle(wrapRef.current ?? document.documentElement);
-
   const paperFill = () => "#ffffff";
   const gridStroke = () => "rgba(180, 186, 194, 0.55)";
 

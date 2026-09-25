@@ -43,12 +43,13 @@ function ExamPage() {
     }
   }, [q.data]);
 
+  const timerRunning = remaining !== null && remaining > 0;
+
   useEffect(() => {
-    if (remaining === null) return;
-    if (remaining <= 0) return;
+    if (!timerRunning) return;
     const t = window.setInterval(() => setRemaining((s) => (s === null ? s : Math.max(0, s - 1))), 1000);
     return () => window.clearInterval(t);
-  }, [remaining !== null]);
+  }, [timerRunning]);
 
   const submit = useMutation({
     mutationFn: completeTest,

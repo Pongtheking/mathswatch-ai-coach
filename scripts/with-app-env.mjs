@@ -133,7 +133,15 @@ function main(argv) {
     { ...readServerEnv(projectRoot()), ...readAppEnv(projectRoot()) },
     process.env,
   );
-  const child = spawn(command, args, { stdio: "inherit", env });
+  // Windows cannot execute an extension-less npm bin command directly. Run
+  // Vite's JavaScript entry point through this Node executable instead, so we
+  // preserve argument boundaries rather than invoking a command shell.
+  const runViteDirectly = process.platform === "win32" && command === "vite";
+  const child = spawn(
+    runViteDirectly ? process.execPath : command,
+    runViteDirectly ? [join(projectRoot(), "node_modules", "vite", "bin", "vite.js"), ...args] : args,
+    { stdio: "inherit", env },
+  );
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));
