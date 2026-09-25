@@ -145,7 +145,9 @@ async function callGemini(
   let quotaError = "";
 
   for (const model of models) {
-    for (const disableThinking of [true, false]) {
+    // For handwritten-paper marking, let the model reason before it answers.
+    // The faster no-thinking pass is retained only as a compatibility fallback.
+    for (const disableThinking of opts?.quality ? [false, true] : [true, false]) {
       const body = {
         contents,
         systemInstruction,

@@ -114,7 +114,10 @@ function PaperReport() {
                   {qMark.student_answer_summary}
                 </p>
               ) : null}
-              {qMark.method_comment ? <p className="mt-2 text-sm text-fg-muted">{qMark.method_comment}</p> : null}
+              <div className="mt-3 rounded-lg border border-border bg-bg px-3 py-2 text-sm">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-fg-subtle">Feedback</p>
+                <p className="mt-1 text-fg-muted">{qMark.method_comment || qMark.examiner_note || "Check the mark points below against your working."}</p>
+              </div>
               <ul className="mt-3 space-y-2">
                 {points.map((pt, i) => (
                   <li

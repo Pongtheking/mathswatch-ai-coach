@@ -75,7 +75,7 @@ ${input.typedText?.trim() ? `\nTyped / pasted paper text:\n${input.typedText.tri
   return chatJson(paperParseSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 4500, temperature: 0 });
+  ], { maxTokens: 4500, temperature: 0, quality: true });
 }
 
 export async function parseMarkScheme(input: {
@@ -129,7 +129,7 @@ ${input.typedText?.trim() ? `\nPasted mark scheme text:\n${input.typedText.trim(
   return chatJson(markSchemeParseSchema, [
     { role: "system", content: EXAMINER },
     { role: "user", content },
-  ], { maxTokens: 5000, temperature: 0 });
+  ], { maxTokens: 5000, temperature: 0, quality: true });
 }
 
 export async function markAgainstScheme(input: {
@@ -200,7 +200,7 @@ Return JSON:
   "warnings": []
 }
 
-Every mark point on the scheme must appear for questions that are visible on these pages. Copy each point_id exactly from the parsed mark scheme; do not use a label such as M1/A1 by itself because labels can repeat. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
+Before returning JSON, carefully check each visible question twice: first identify the student's method and answer, then test every official point. Award valid method marks even where a later arithmetic error happens; apply ft/oe where the scheme permits. Every mark point on the scheme must appear for questions that are visible on these pages. Copy each point_id exactly from the parsed mark scheme; do not use a label such as M1/A1 by itself because labels can repeat. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
 If a question is clearly not on these pages, omit it rather than marking it zero.
 If later images are the official mark scheme pages, use them only as the scheme — never as the student's work.`,
     },
@@ -421,7 +421,7 @@ export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): P
   const questions = [...byRef.values()].sort((a, b) =>
     a.question_ref.localeCompare(b.question_ref, undefined, { numeric: true }),
   );
-  return normaliseTotals({
+  return addFeedback(normaliseTotals({
     questions,
     total_awarded: 0,
     total_available: 0,
@@ -434,7 +434,7 @@ export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): P
         ? [`${missing.length} question${missing.length === 1 ? " was" : "s were"} not read reliably and ${missing.length === 1 ? "is" : "are"} marked for review: ${missing.join(", ")}.`]
         : []),
     ]),
-  }, scheme);
+  }, scheme));
 }
 
 function reconcileSchemeWithPaper(scheme: MarkSchemeParse, paper: PaperParse | null): MarkSchemeParse {
@@ -540,6 +540,29 @@ function normaliseTotals(mark: PaperMark, scheme?: MarkSchemeParse): PaperMark {
     questions,
     total_awarded: mark.questions.length ? total_awarded : mark.total_awarded,
     total_available: mark.questions.length ? total_available : mark.total_available,
+  };
+}
+
+function addFeedback(mark: PaperMark): PaperMark {
+  const questions = mark.questions.map((question) => {
+    const points = question.points.map((point) => ({
+      ...point,
+      reason: point.reason.trim() || (point.awarded ? "Awarded from the method or answer shown." : "This mark point was not evidenced in the submitted working."),
+    }));
+    const feedback = question.method_comment.trim() || question.examiner_note.trim() || (() => {
+      if (question.needs_review) return "This answer could not be read reliably enough to mark with confidence. Check the work against the listed mark points.";
+      const missed = points.find((point) => !point.awarded);
+      if (missed) return `You earned ${question.awarded}/${question.max_marks}. Focus next on: ${missed.reason}`;
+      return `You earned all ${question.max_marks} marks on this question.`;
+    })();
+    return { ...question, points, method_comment: feedback };
+  });
+  const totalAwarded = questions.reduce((sum, question) => sum + question.awarded, 0);
+  const totalAvailable = questions.reduce((sum, question) => sum + question.max_marks, 0);
+  return {
+    ...mark,
+    questions,
+    overall_comment: mark.overall_comment.trim() || `You scored ${totalAwarded}/${totalAvailable}. Use the question feedback and mark points below to target your next revision session.`,
   };
 }
 
