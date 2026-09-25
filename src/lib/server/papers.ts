@@ -175,8 +175,8 @@ export const markPaper = createServerFn({ method: "POST" })
         return { ok: false as const, error: result.error, paperId: id, partial: hasPartialMark };
       }
 
-      const mark = existingMark ? mergePaperMarks([existingMark, result.mark]) : result.mark;
       const scheme = result.scheme.questions.length ? result.scheme : existingScheme ?? result.scheme;
+      const mark = existingMark ? mergePaperMarks([existingMark, result.mark], scheme) : mergePaperMarks([result.mark], scheme);
       const paper = result.paper ?? existingPaper;
       const board = paper?.board ?? "unspecified";
       const tier = paper?.tier ?? "unknown";

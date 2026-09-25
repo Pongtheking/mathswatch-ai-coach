@@ -199,7 +199,7 @@ Return JSON:
   "warnings": []
 }
 
-Every mark point on the scheme must appear for questions that are visible on these pages. Awarded totals must match the sum of awarded points (counting alternative groups once).
+Every mark point on the scheme must appear for questions that are visible on these pages. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
 If a question is clearly not on these pages, omit it rather than marking it zero.
 If later images are the official mark scheme pages, use them only as the scheme — never as the student's work.`,
     },
@@ -253,13 +253,18 @@ export async function markCompletedScript(input: {
       : { questions: [], general_notes: [], warnings: [schemeRes.error], confidence: 0 };
   }
 
-  if (scheme.questions.length < 2 && !paper) {
+  // The question paper provides a second official statement of each question's
+  // maximum. It is used only to repair an incomplete scheme extraction, never
+  // to invent mark points or answers.
+  if (!paper) {
     const parsed = await parsePaperImages({
       images: input.paperImages.slice(0, 10),
       typedText: input.paperText,
     });
     if (parsed.ok) paper = parsed.data;
   }
+
+  scheme = reconcileSchemeWithPaper(scheme, paper);
 
   const questions =
     scheme.questions.length > 0
@@ -294,14 +299,14 @@ export async function markCompletedScript(input: {
       }
       return markRes;
     }
-    marks.push(normaliseTotals(markRes.data));
+    marks.push(normaliseTotals(markRes.data, scheme));
   }
 
   if (!marks.length) {
     return { ok: false, error: "Could not mark this script. Retry with clearer pages." };
   }
 
-  const mark = mergePaperMarks(marks);
+  const mark = mergePaperMarks(marks, scheme);
   if (incompleteWarning) mark.warnings = [...mark.warnings, incompleteWarning];
   return { ok: true, scheme, paper, mark, partial: Boolean(incompleteWarning) };
 }
@@ -367,7 +372,7 @@ function mergeSchemes(parts: MarkSchemeParse[]): MarkSchemeParse {
   };
 }
 
-export function mergePaperMarks(parts: PaperMark[]): PaperMark {
+export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): PaperMark {
   const byRef = new Map<string, PaperMark["questions"][number]>();
   const warnings: string[] = [];
   const lost: string[] = [];
@@ -379,8 +384,36 @@ export function mergePaperMarks(parts: PaperMark[]): PaperMark {
     if (part.overall_comment.trim()) comments.push(part.overall_comment.trim());
     if (part.method_vs_accuracy.trim()) methods.push(part.method_vs_accuracy.trim());
     for (const q of part.questions) {
+      if (!q.question_ref.trim()) continue;
       const prev = byRef.get(q.question_ref);
       if (!prev || questionWeight(q) >= questionWeight(prev)) byRef.set(q.question_ref, q);
+    }
+  }
+  const expected = schemeQuestions(scheme);
+  const missing: string[] = [];
+  for (const [ref, source] of expected) {
+    if (!byRef.has(ref)) {
+      missing.push(ref);
+      byRef.set(ref, {
+        question_ref: ref,
+        awarded: 0,
+        max_marks: source.max_marks,
+        points: source.points.map((point) => ({
+          code: point.code,
+          awarded: false,
+          evidence: "",
+          reason: "This question was not read reliably enough to award marks.",
+          unsure: true,
+        })),
+        student_answer_summary: "",
+        method_comment: "",
+        follow_through_applied: false,
+        mistakes: [],
+        skill_ids: [],
+        confidence: 0,
+        needs_review: true,
+        examiner_note: "Not read reliably — review this question before relying on the total.",
+      });
     }
   }
   const questions = [...byRef.values()].sort((a, b) =>
@@ -393,8 +426,42 @@ export function mergePaperMarks(parts: PaperMark[]): PaperMark {
     overall_comment: unique(comments).join(" "),
     method_vs_accuracy: methods[0] ?? "",
     biggest_lost_marks: unique(lost).slice(0, 10),
-    warnings: unique(warnings),
+    warnings: unique([
+      ...warnings,
+      ...(missing.length
+        ? [`${missing.length} question${missing.length === 1 ? " was" : "s were"} not read reliably and ${missing.length === 1 ? "is" : "are"} marked for review: ${missing.join(", ")}.`]
+        : []),
+    ]),
+  }, scheme);
+}
+
+function reconcileSchemeWithPaper(scheme: MarkSchemeParse, paper: PaperParse | null): MarkSchemeParse {
+  if (!paper?.questions.length) return scheme;
+  const schemeTotal = scheme.questions.reduce((sum, question) => sum + question.total_marks, 0);
+  const paperTotal = paper.questions.reduce((sum, question) => sum + question.marks, 0);
+  if (paperTotal <= schemeTotal) return scheme;
+
+  const paperByRef = new Map(paper.questions.map((question) => [question.ref.trim(), question]));
+  const used = new Set<string>();
+  const questions = scheme.questions.map((question) => {
+    const paperQuestion = paperByRef.get(question.ref.trim());
+    if (!paperQuestion || paperQuestion.marks <= 0) return question;
+    used.add(paperQuestion.ref.trim());
+    return { ...question, total_marks: paperQuestion.marks };
   });
+  for (const question of paper.questions) {
+    const ref = question.ref.trim();
+    if (!ref || used.has(ref) || scheme.questions.some((item) => item.ref.trim() === ref)) continue;
+    questions.push({ ref, total_marks: question.marks, notes: question.prompt, points: [] });
+  }
+  return {
+    ...scheme,
+    questions,
+    warnings: unique([
+      ...scheme.warnings,
+      `The mark-scheme extraction totalled ${schemeTotal}, but the question paper totalled ${paperTotal}. Question maxima were restored from the paper; questions without a readable scheme are flagged for review.`,
+    ]),
+  };
 }
 
 function questionWeight(q: PaperMark["questions"][number]): number {
@@ -407,12 +474,38 @@ function unique(values: string[]): string[] {
   return [...new Set(values.map((v) => v.trim()).filter(Boolean))];
 }
 
-function normaliseTotals(mark: PaperMark): PaperMark {
+function schemeQuestions(scheme?: MarkSchemeParse) {
+  const expected = new Map<string, { max_marks: number; points: MarkSchemeParse["questions"][number]["points"] }>();
+  for (const question of scheme?.questions ?? []) {
+    const ref = question.ref.trim();
+    if (!ref) continue;
+    const pointMarks = question.points.reduce((sum, point) => sum + point.marks, 0);
+    expected.set(ref, {
+      max_marks: question.total_marks > 0 ? question.total_marks : pointMarks,
+      points: question.points,
+    });
+  }
+  return expected;
+}
+
+function normaliseTotals(mark: PaperMark, scheme?: MarkSchemeParse): PaperMark {
+  const expected = schemeQuestions(scheme);
   const questions = mark.questions.map((q) => {
-    const fromPoints = q.points.reduce((sum, p) => sum + (p.awarded ? 1 : 0), 0);
-    const awarded = q.points.length ? Math.min(q.max_marks || fromPoints, fromPoints) : q.awarded;
-    const max = q.max_marks || q.points.length || awarded;
-    return { ...q, awarded: Math.min(awarded, max), max_marks: max };
+    const official = expected.get(q.question_ref.trim());
+    const officialPoints = new Map((official?.points ?? []).map((point) => [point.code, point]));
+    const awardedGroups = new Set<string>();
+    const fromPoints = q.points.reduce((sum, point) => {
+      if (!point.awarded) return sum;
+      const source = officialPoints.get(point.code);
+      if (!source) return sum;
+      const group = source.alternative_group;
+      if (group && awardedGroups.has(group)) return sum;
+      if (group) awardedGroups.add(group);
+      return sum + source.marks;
+    }, 0);
+    const max = official?.max_marks || q.max_marks || q.points.length || q.awarded;
+    const awarded = official && q.points.length ? fromPoints : q.awarded;
+    return { ...q, awarded: Math.min(Math.max(0, awarded), max), max_marks: max };
   });
   const total_awarded = questions.reduce((s, q) => s + q.awarded, 0);
   const total_available = questions.reduce((s, q) => s + q.max_marks, 0);
