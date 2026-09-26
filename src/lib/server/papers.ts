@@ -9,6 +9,10 @@ import { withStudent } from "@/lib/server/ensure";
 import { applyEvidence } from "@/lib/server/mastery-apply";
 
 const MAX_PAGES_PER_REQUEST = 8;
+// Mark schemes are parsed in eight-page batches in the AI layer. Keep enough
+// pages from the first browser request to cover a complete GCSE scheme instead
+// of silently discarding its later questions.
+const MAX_SCHEME_PAGES = 24;
 const MAX_EACH = 380_000;
 
 type Img = { mime: string; base64: string; page?: number };
@@ -18,10 +22,13 @@ function displayNameFromContext(context: { userId: string } & Record<string, unk
   return u.user?.name ?? "Student";
 }
 
-function cleanImages(list: Img[] | undefined): Array<{ mime: string; base64: string }> {
+function cleanImages(
+  list: Img[] | undefined,
+  maxPages = MAX_PAGES_PER_REQUEST,
+): Array<{ mime: string; base64: string }> {
   return (list ?? [])
     .filter((img) => img.base64 && img.base64.length < MAX_EACH)
-    .slice(0, MAX_PAGES_PER_REQUEST)
+    .slice(0, maxPages)
     .map((img) => ({
       mime: img.mime.startsWith("image/") ? img.mime : "image/jpeg",
       base64: img.base64.startsWith("data:") ? (img.base64.split(",")[1] ?? "") : img.base64,
@@ -131,7 +138,7 @@ export const markPaper = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Confirm you have the right to upload these materials." };
     }
     const paperImages = cleanImages(data.paperImages);
-    const schemeImages = cleanImages(data.schemeImages);
+    const schemeImages = cleanImages(data.schemeImages, MAX_SCHEME_PAGES);
     const schemeText = (data.schemeText ?? "").trim();
     const paperText = (data.paperText ?? "").trim();
     const lastBatch = data.lastBatch !== false;
