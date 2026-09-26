@@ -1,6 +1,6 @@
 import { SKILL_BY_ID, SKILLS } from "@/lib/curriculum/data";
 
-export type VideoChannel = "1st Class Maths" | "Maths Genie";
+export type VideoChannel = "1st Class Maths" | "Maths Genie" | "YouTube";
 
 export type SkillVideo = {
   title: string;
@@ -10,7 +10,7 @@ export type SkillVideo = {
   query: string;
 };
 
-const CHANNEL_SEARCH = "https://www.youtube.com/@1stClassMaths/search?query=";
+const YOUTUBE_SEARCH = "https://www.youtube.com/results?search_query=";
 
 function yt(id: string, title: string, channel: VideoChannel = "1st Class Maths"): SkillVideo {
   return {
@@ -25,15 +25,19 @@ function yt(id: string, title: string, channel: VideoChannel = "1st Class Maths"
 function search(query: string, title = query): SkillVideo {
   return {
     title,
-    channel: "1st Class Maths",
-    href: CHANNEL_SEARCH + encodeURIComponent(query),
+    // Channel-search URLs often fail in an embedded or mobile browser. A
+    // normal YouTube GCSE-topic search is robust and returns playable videos
+    // for this exact skill when a confirmed direct link is not curated yet.
+    channel: "YouTube",
+    href: YOUTUBE_SEARCH + encodeURIComponent(`GCSE Maths ${query} walkthrough`),
     query,
   };
 }
 
 /**
- * Direct watch URLs only when the 1st Class Maths (or Maths Genie) video is confirmed.
- * Everything else is a @1stClassMaths channel search so we never link the wrong clip.
+ * Direct watch URLs are used when a 1st Class Maths (or Maths Genie) video is
+ * confirmed. Every other skill opens normal YouTube results narrowed to the
+ * exact GCSE topic, rather than a channel page that may not load a video.
  */
 const CONFIRMED: Record<string, SkillVideo> = {
   "num.hcf-lcm": yt("kHLwbPwvTtw", "HCF and LCM"),

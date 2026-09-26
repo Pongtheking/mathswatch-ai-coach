@@ -85,7 +85,9 @@ export function TopicVideoCard({
       <div className="flex items-start justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{video.title}</p>
-          <p className="mt-0.5 text-xs text-fg-muted">{video.channel} · topic walkthrough, not this question’s answer</p>
+          <p className="mt-0.5 text-xs text-fg-muted">
+            {video.youtubeId ? `${video.channel} · topic walkthrough, not this question’s answer` : "YouTube · GCSE topic video results"}
+          </p>
         </div>
         <a
           href={video.href}

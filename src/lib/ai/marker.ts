@@ -562,7 +562,16 @@ function normaliseTotals(mark: PaperMark, scheme?: MarkSchemeParse): PaperMark {
       return sum + source.marks;
     }, 0);
     const max = official?.max_marks || q.max_marks || q.points.length || q.awarded;
-    const awarded = official && q.points.length ? fromPoints : q.awarded;
+    const declaredAward = Math.min(Math.max(0, q.awarded), max);
+    // A model can correctly total a question yet use a slightly different
+    // point id/label in its explanation. Never turn that declared, capped
+    // examiner total into zero purely because an internal id failed to map.
+    // We retain the stronger of the independently totalled answer and the
+    // mapped official points, while the detailed evidence remains visible for
+    // review.
+    const awarded = official && q.points.length
+      ? Math.max(fromPoints, declaredAward)
+      : declaredAward;
     return { ...q, awarded: Math.min(Math.max(0, awarded), max), max_marks: max };
   });
   const total_awarded = questions.reduce((s, q) => s + q.awarded, 0);
