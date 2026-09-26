@@ -172,6 +172,7 @@ export async function generateQuestion(input: {
   skillName: string;
   difficulty: number;
   calculator: boolean;
+  avoidPrompts?: string[];
 }): Promise<{ ok: true; data: GeneratedQuestion } | { ok: false; error: string }> {
   const messages: ChatMessage[] = [
     {
@@ -187,7 +188,8 @@ Do not copy a famous textbook question word-for-word.`,
     },
     {
       role: "user",
-      content: `Skill: ${input.skillId} (${input.skillName}). Target grade/difficulty: ${input.difficulty}. Calculator allowed: ${input.calculator}.`,
+      content: `Skill: ${input.skillId} (${input.skillName}). Target grade/difficulty: ${input.difficulty}. Calculator allowed: ${input.calculator}.
+${input.avoidPrompts?.length ? `Do NOT repeat, lightly reword, or reuse the same values/context as these questions the student has already done:\n${input.avoidPrompts.slice(0, 40).map((prompt, i) => `${i + 1}. ${prompt}`).join("\n")}` : ""}`,
     },
   ];
   const result = await chatJson(generatedQuestionSchema, messages, { maxTokens: 1400 });

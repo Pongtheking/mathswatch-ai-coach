@@ -164,6 +164,46 @@ const SEARCH_TITLES: Record<string, string> = {
 
 export const SKILL_VIDEOS: Record<string, SkillVideo> = { ...CONFIRMED };
 
+// Verified direct YouTube results for the remaining curriculum skills. Keeping
+// these ids locally means "Watch a video" opens the actual walkthrough, not a
+// creator's channel or a results page that leaves the student to search again.
+const DIRECT_TOPIC_IDS: Record<string, string> = {
+  "num.integers": "Hs5hM7kER4Y", "num.negatives": "LBvLtIiPyWM", "num.prime-factors": "KY1LlKcIVvw",
+  "num.fractions": "3fY1AqnrUhQ", "num.decimals": "XLRJ8y5duc0", "num.ratio": "pSKJMIJct_I",
+  "num.indices": "op6-3ucret0", "num.recurring-decimals": "LhfBLYQ5T7E", "num.order-ops": "70cAYYCJBuQ",
+  "num.rounding": "r070e7BCw9U", "num.estimation": "JTQ2Wh5E2js", "num.fdp": "XN4K2HVV_qs",
+  "num.fraction-of-amount": "vi_m5qe8zMA", "num.error-intervals": "z9t1HGRNpPA", "num.product-rule": "QeT1T3QIe1s",
+  "alg.simplifying": "honqw6r8uQY", "alg.expanding": "CaUgHGV-JdI", "alg.expanding-double": "QxYuwK2RZUw",
+  "alg.factorising-linear": "Uu4FJyyXCtM", "alg.factorising-quadratic": "3kE_Q-JdlO4", "alg.rearranging": "8U9u_itcs7k",
+  "alg.solving-linear": "B3ysZqiJozM", "alg.solving-quadratic": "abBgTO8eW-c", "alg.inequalities": "saASveF7jlY",
+  "alg.sequences": "D2bZcm2NnfU", "alg.nth-term-linear": "0vOwE2NHAEk", "alg.nth-term-quadratic": "7Isa4P8lISc",
+  "alg.iteration": "WHZ2IiKcqeU", "alg.proof": "Ghzp37tHyxA", "alg.equation-of-line": "rdIO7y4VmEE",
+  "alg.parallel-perpendicular": "KZG5ByowCrA", "alg.linear-quadratic-sim": "eEYreNDTvKQ",
+  "alg.quadratic-inequalities": "BlhUiV10ZCQ", "alg.identities": "5jXHWWtB_FE",
+  "rat.ratio": "ejhYX2cku7o", "rat.direct-proportion": "AWH6wQBbpo0", "rat.inverse-proportion": "AWH6wQBbpo0",
+  "rat.best-buys": "03JX5c2AY8M", "rat.speed": "gbfD1TjyYWQ", "rat.density": "06YFtU4dtyI",
+  "rat.pressure": "7IC9Ah13TOQ", "rat.compound-measures": "g4Goa8zH1dc", "rat.recipes": "8ERGHuNtJbI",
+  "rat.currency": "3ZopQfmTISw", "rat.scale-drawings": "0y6ZbW5Fj40", "geo.angles": "I5auyoXYoX0",
+  "geo.polygons": "FZw0XTHA2Eo", "geo.congruence": "aK8i7LKZd9o", "geo.similarity": "PUDk7UL6u2I",
+  "geo.pythagoras": "CnHgqfBSgco", "geo.trig-sine-cosine": "6t5lZb84fvE", "geo.area": "aFeqbds1y9Y",
+  "geo.volume": "0FPCoUiJDGE", "geo.surface-area": "0FPCoUiJDGE", "geo.sectors": "Pyegtuzo5OU",
+  "geo.triangle-area-trig": "eUJdseG2j40", "geo.similar-area-volume": "0U1T_f5xb98", "geo.plans-elevations": "WCwtVN7nKTE",
+  "pro.basic": "-RevYzm2PNk", "pro.sample-spaces": "Xqno7W0OUtE", "pro.frequency-trees": "Z5BX-LbG7mI",
+  "pro.relative-frequency": "4R6Hy-u6wAs", "pro.independent": "mUDqgCe-PAo", "sta.averages": "MgwdxJzAqYo",
+  "sta.frequency-tables": "15YWrT7mlEs", "sta.grouped-data": "15YWrT7mlEs", "sta.box-plots": "SUP-mBn2B2E",
+  "sta.scatter": "UI0CT-gezr4", "sta.sampling": "7rgdHNfVKio", "sta.pie-charts": "t4aAOzSNabI",
+  "sta.capture-recapture": "5zRBF3EtBjU", "sta.stratified": "fEaP-3ocMnQ", "gra.linear": "rdIO7y4VmEE",
+  "gra.cubic": "wCA1VskgTag", "gra.reciprocal": "1xmdZ2Wqznc", "gra.real-life": "x6BQs7wD3p8",
+  "gra.trig-graphs": "fNH5EWWtf7k", "gra.exponential": "oUcjmGThMdc", "gra.area-under": "1AVtslXytRA",
+  "gra.velocity-time": "UsmhVCjfzYQ", "gra.solving-graphically": "3G8uFHEdqH0",
+};
+
+for (const [skillId, youtubeId] of Object.entries(DIRECT_TOPIC_IDS)) {
+  if (!SKILL_VIDEOS[skillId]) {
+    SKILL_VIDEOS[skillId] = yt(youtubeId, SKILL_BY_ID[skillId]?.name ?? "GCSE Maths topic");
+  }
+}
+
 for (const skill of SKILLS) {
   if (!SKILL_VIDEOS[skill.id]) {
     const q = SEARCH_TITLES[skill.id] ?? skill.name;

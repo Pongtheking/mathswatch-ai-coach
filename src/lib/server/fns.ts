@@ -25,6 +25,10 @@ import type { WorkingAnalysis } from "@/lib/ai/schemas";
 
 const MAX_IMAGE = 1_800_000;
 
+function promptKey(prompt: string) {
+  return prompt.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 function displayNameFromContext(context: { userId: string } & Record<string, unknown>) {
   const u = context as { userId: string; user?: { name?: string | null } };
   return u.user?.name ?? "Student";
@@ -505,18 +509,25 @@ export const startPractice = createServerFn({ method: "POST" })
       const attempted = await sql<{ question_id: string }>`
         select distinct question_id from question_attempts where user_id = ${context.userId}`;
       const attemptedSet = new Set(attempted.map((a) => a.question_id));
+      const priorRows = await sql<{ prompt: string }>`select q.prompt from question_attempts a
+        join questions q on q.id = a.question_id where a.user_id = ${context.userId}
+        order by a.created_at desc limit 80`;
+      const priorPrompts = priorRows.map((row) => row.prompt);
+      const priorKeys = new Set(priorPrompts.map(promptKey));
 
       const bank = BANK_QUESTIONS.filter((q) => q.skillIds.includes(skillId) && !attemptedSet.has(q.id));
       let chosen = bank.sort((a, b) => Math.abs(a.difficulty - band) - Math.abs(b.difficulty - band))[0];
 
       if (!chosen) {
-        const gen = await generateQuestion({
-          skillId,
-          skillName: SKILL_BY_ID[skillId]?.name ?? skillId,
-          difficulty: band,
-          calculator: profiles[0]?.calculator_preference !== "non-calculator",
-        });
-        if (gen.ok) {
+        for (let generation = 0; generation < 3; generation++) {
+          const gen = await generateQuestion({
+            skillId,
+            skillName: SKILL_BY_ID[skillId]?.name ?? skillId,
+            difficulty: band,
+            calculator: profiles[0]?.calculator_preference !== "non-calculator",
+            avoidPrompts: priorPrompts,
+          });
+          if (!gen.ok || priorKeys.has(promptKey(gen.data.prompt))) continue;
           const id = newId();
           await sql`insert into questions (
             id, user_id, source, prompt, marks, answer, worked_solution, skill_ids, topic_id,
@@ -529,8 +540,12 @@ export const startPractice = createServerFn({ method: "POST" })
           )`;
           return { ok: true as const, questionId: id, skillId, reason: ranked[0]?.whyItMatters ?? "" };
         }
-        const fallback = BANK_QUESTIONS.find((q) => q.skillIds.includes(skillId)) ?? BANK_QUESTIONS[0];
-        return { ok: true as const, questionId: fallback.id, skillId, reason: ranked[0]?.whyItMatters ?? "" };
+        // Never fall back to a bank question the student has already attempted.
+        // Repeating is only allowed when they deliberately reopen that question.
+        return {
+          ok: false as const,
+          error: "A new question could not be generated just now. Please try again — an old question will not be repeated.",
+        };
       }
       return { ok: true as const, questionId: chosen.id, skillId, reason: ranked.find((r) => r.skillId === skillId)?.whyItMatters ?? "" };
     });
@@ -990,15 +1005,23 @@ export const generatePracticeQuestion = createServerFn({ method: "POST" })
     return withStudent(context.userId, displayNameFromContext(context), async (sql) => {
       const skill = SKILL_BY_ID[data.skillId];
       if (!skill) return { ok: false as const, error: "Unknown skill." };
-      const gen = await generateQuestion({
-        skillId: skill.id,
-        skillName: skill.name,
-        difficulty: data.difficulty,
-        calculator: data.calculator,
-      });
-      if (!gen.ok) return { ok: false as const, error: gen.error };
-      const id = newId();
-      await sql`insert into questions (
+      const priorRows = await sql<{ prompt: string }>`select q.prompt from question_attempts a
+        join questions q on q.id = a.question_id where a.user_id = ${context.userId}
+        order by a.created_at desc limit 80`;
+      const priorPrompts = priorRows.map((row) => row.prompt);
+      const priorKeys = new Set(priorPrompts.map(promptKey));
+      for (let generation = 0; generation < 3; generation++) {
+        const gen = await generateQuestion({
+          skillId: skill.id,
+          skillName: skill.name,
+          difficulty: data.difficulty,
+          calculator: data.calculator,
+          avoidPrompts: priorPrompts,
+        });
+        if (!gen.ok) continue;
+        if (priorKeys.has(promptKey(gen.data.prompt))) continue;
+        const id = newId();
+        await sql`insert into questions (
         id, user_id, source, prompt, marks, answer, worked_solution, skill_ids, topic_id,
         difficulty, calculator, question_type, common_mistakes, confirmed
       ) values (
@@ -1006,8 +1029,10 @@ export const generatePracticeQuestion = createServerFn({ method: "POST" })
         ${gen.data.worked_solution}, ${JSON.stringify([skill.id])}, ${skill.topicId},
         ${gen.data.difficulty}, ${gen.data.calculator}, ${gen.data.question_type},
         ${JSON.stringify(gen.data.common_mistakes)}, true
-      )`;
-      return { ok: true as const, questionId: id };
+        )`;
+        return { ok: true as const, questionId: id };
+      }
+      return { ok: false as const, error: "Could not create a genuinely new question. Please try again." };
     });
   });
 
