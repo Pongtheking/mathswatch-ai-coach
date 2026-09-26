@@ -195,8 +195,8 @@ function MarkerPage() {
               return;
             }
             if (usable.length === 1) {
-              if (!paper.files.length) await fillSlot(usable, setPaper);
-              else await fillSlot(usable, setScheme);
+              if (!paper.files.length) await fillSlot(usable, setPaper, { maxEdge: 1700, targetB64: 240_000 });
+              else await fillSlot(usable, setScheme, { maxEdge: 1100, targetB64: 100_000 });
               return;
             }
             const a = usable[0];
@@ -204,7 +204,10 @@ function MarkerPage() {
             setPaper((s) => ({ ...s, reading: true }));
             setScheme((s) => ({ ...s, reading: true }));
             try {
-              const [pa, pb] = await Promise.all([filesToPages([a]), filesToPages([b])]);
+              const [pa, pb] = await Promise.all([
+                filesToPages([a], undefined, { maxEdge: 1100, targetB64: 100_000 }),
+                filesToPages([b], undefined, { maxEdge: 1100, targetB64: 100_000 }),
+              ]);
               const guess = classifyPair(
                 { name: a.name, text: pa.text },
                 { name: b.name, text: pb.text },
@@ -212,10 +215,12 @@ function MarkerPage() {
               const first = { files: [a], images: pa.images, text: pa.text, truncated: pa.truncated, reading: false, totalPages: pa.totalPages };
               const second = { files: [b], images: pb.images, text: pb.text, truncated: pb.truncated, reading: false, totalPages: pb.totalPages };
               if (guess.paperFirst) {
-                setPaper(first);
+                const detailedPaper = await filesToPages([a], undefined, { maxEdge: 1700, targetB64: 240_000 });
+                setPaper({ ...first, images: detailedPaper.images });
                 setScheme(second);
               } else {
-                setPaper(second);
+                const detailedPaper = await filesToPages([b], undefined, { maxEdge: 1700, targetB64: 240_000 });
+                setPaper({ ...second, images: detailedPaper.images });
                 setScheme(first);
               }
               setHint(guess.reason);
@@ -233,7 +238,7 @@ function MarkerPage() {
             label="Your completed paper"
             hint="The script you wrote on"
             slot={paper}
-            onFiles={(files) => void fillSlot(files, setPaper)}
+            onFiles={(files) => void fillSlot(files, setPaper, { maxEdge: 1700, targetB64: 240_000 })}
             disabled={mut.isPending}
           />
           <FileSlot
@@ -241,7 +246,7 @@ function MarkerPage() {
             label="Official mark scheme"
             hint="From the same exam series"
             slot={scheme}
-            onFiles={(files) => void fillSlot(files, setScheme)}
+            onFiles={(files) => void fillSlot(files, setScheme, { maxEdge: 1100, targetB64: 100_000 })}
             disabled={mut.isPending}
           />
         </div>
@@ -372,7 +377,11 @@ function MarkerPage() {
   );
 }
 
-async function fillSlot(files: File[], set: (fn: (s: Slot) => Slot) => void) {
+async function fillSlot(
+  files: File[],
+  set: (fn: (s: Slot) => Slot) => void,
+  options?: { maxEdge?: number; targetB64?: number },
+) {
   const usable = files.filter(isPdfOrImage);
   if (!usable.length) {
     toast.error("Use PDFs or photos.");
@@ -380,7 +389,7 @@ async function fillSlot(files: File[], set: (fn: (s: Slot) => Slot) => void) {
   }
   set((s) => ({ ...s, reading: true }));
   try {
-    const result = await filesToPages(usable);
+    const result = await filesToPages(usable, undefined, options);
     set(() => ({
       files: usable,
       images: result.images,

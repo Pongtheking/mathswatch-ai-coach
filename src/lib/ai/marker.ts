@@ -13,7 +13,7 @@ const SKILL_CATALOGUE = SKILLS.map(
   (s) => `${s.id} | ${s.name} | ${s.category} | grades ${s.gradeMin}-${s.gradeMax}`,
 ).join("\n");
 
-const EXAMINER = `You are a senior GCSE Maths examiner (AQA / Edexcel / OCR). You mark with the discipline of a trained assistant examiner.
+const EXAMINER = `You are Maths Coach Examiner: a specialised GCSE Maths marking assistant for AQA, Edexcel and OCR. You mark with the discipline of a trained assistant examiner, not as a general chat assistant.
 
 THE MARK SCHEME IS THE ONLY SOURCE OF TRUTH.
 - Do not invent answers, extra methods, or extra marks.
@@ -31,6 +31,12 @@ GCSE mark types:
 - cao = correct answer only.
 - dep = dependent.
 - SC = special case. Award only if the scheme lists it.
+
+Required marking protocol:
+1. Read each visible student response and working before looking at its final answer.
+2. Match that working point-by-point to the official scheme; identify every earned M, A, B and follow-through mark.
+3. Then re-check the question for valid alternative methods, oe wording and carried-forward values before deciding a mark is lost.
+4. For every awarded or lost point, give concise evidence from the student's actual work. Do not substitute a plausible calculation you cannot see.
 
 Further rules:
 1. Never penalise the same error twice. Use follow-through when the scheme allows it.
@@ -200,7 +206,7 @@ Return JSON:
   "warnings": []
 }
 
-Before returning JSON, carefully check each visible question twice: first identify the student's method and answer, then test every official point. Award valid method marks even where a later arithmetic error happens; apply ft/oe where the scheme permits. Every mark point on the scheme must appear for questions that are visible on these pages. Copy each point_id exactly from the parsed mark scheme; do not use a label such as M1/A1 by itself because labels can repeat. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
+Before returning JSON, perform the required two-pass examiner protocol for every visible question. Award valid method marks even where a later arithmetic error happens; apply ft/oe where the scheme permits. Every mark point on the scheme must appear for questions that are visible on these pages. Copy each point_id exactly from the parsed mark scheme; do not use a label such as M1/A1 by itself because labels can repeat. Use the question reference and maximum from the supplied scheme exactly; never make up, change, or combine a question's maximum. Awarded totals must match the sum of awarded points (counting alternative groups once).
 If a question is clearly not on these pages, omit it rather than marking it zero.
 If later images are the official mark scheme pages, use them only as the scheme — never as the student's work.`,
     },
@@ -323,7 +329,23 @@ export async function markCompletedScript(input: {
 
   const mark = mergePaperMarks(marks, scheme);
   if (incompleteWarning) mark.warnings = [...mark.warnings, incompleteWarning];
+  const coverage = evidenceCoverage(mark, scheme);
+  if (coverage.expected >= 8 && coverage.ratio < 0.65) {
+    return {
+      ok: false,
+      error: `The specialised examiner could only evidence ${coverage.evidenced} of ${coverage.expected} questions. No unreliable whole-paper score was saved; retry with a clearer scan or photos that keep all writing in frame.`,
+    };
+  }
   return { ok: true, scheme, paper, mark, partial: Boolean(incompleteWarning) };
+}
+
+function evidenceCoverage(mark: PaperMark, scheme: MarkSchemeParse) {
+  const expected = scheme.questions.filter((question) => question.total_marks > 0).length;
+  const evidenced = mark.questions.filter((question) =>
+    Boolean(question.student_answer_summary.trim())
+    && question.points.some((point) => Boolean(point.evidence.trim())),
+  ).length;
+  return { expected, evidenced, ratio: expected ? evidenced / expected : 1 };
 }
 
 function chunk<T>(items: T[], size: number, overlap: number): T[][] {

@@ -174,7 +174,12 @@ function QuestionPage() {
         </div>
         {padMode === "write" ? (
           <div className="mt-3">
-            <WorkingCanvas ref={padRef} storageKey={`working-${id}`} minHeight={600} />
+            <WorkingCanvas
+              ref={padRef}
+              storageKey={`working-${id}`}
+              minHeight={600}
+              focusQuestion={<MathText text={question.prompt} />}
+            />
           </div>
         ) : null}
         {padMode === "type" ? (

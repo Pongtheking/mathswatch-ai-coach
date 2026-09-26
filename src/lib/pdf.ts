@@ -81,8 +81,14 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): string {
   return url.split(",")[1] ?? "";
 }
 
-async function bitmapToJpeg(source: CanvasImageSource, w: number, h: number): Promise<PageImage> {
-  const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+async function bitmapToJpeg(
+  source: CanvasImageSource,
+  w: number,
+  h: number,
+  maxEdge = MAX_EDGE,
+  targetB64 = TARGET_B64,
+): Promise<PageImage> {
+  const scale = Math.min(1, maxEdge / Math.max(w, h));
   const width = Math.max(1, Math.round(w * scale));
   const height = Math.max(1, Math.round(h * scale));
   const canvas = document.createElement("canvas");
@@ -95,7 +101,7 @@ async function bitmapToJpeg(source: CanvasImageSource, w: number, h: number): Pr
   ctx.drawImage(source, 0, 0, width, height);
   let quality = 0.68;
   let base64 = canvasToJpeg(canvas, quality);
-  while (base64.length > TARGET_B64 && quality > 0.38) {
+  while (base64.length > targetB64 && quality > 0.38) {
     quality -= 0.08;
     base64 = canvasToJpeg(canvas, quality);
   }
@@ -126,9 +132,13 @@ export async function renderPdfPages(file: File, maxPages = MAX_RENDER_PAGES): P
   return pages;
 }
 
-export async function imageFileToPage(file: File, page: number): Promise<PageImage> {
+export async function imageFileToPage(
+  file: File,
+  page: number,
+  options?: { maxEdge?: number; targetB64?: number },
+): Promise<PageImage> {
   const bitmap = await createImageBitmap(file);
-  const img = await bitmapToJpeg(bitmap, bitmap.width, bitmap.height);
+  const img = await bitmapToJpeg(bitmap, bitmap.width, bitmap.height, options?.maxEdge ?? MAX_EDGE, options?.targetB64 ?? TARGET_B64);
   bitmap.close();
   return { ...img, page };
 }
@@ -136,6 +146,7 @@ export async function imageFileToPage(file: File, page: number): Promise<PageIma
 export async function filesToPages(
   files: File[],
   maxPages = MAX_RENDER_PAGES,
+  options?: { maxEdge?: number; targetB64?: number },
 ): Promise<{
   images: PageImage[];
   text: string;
@@ -172,7 +183,8 @@ export async function filesToPages(
       for (let i = 1; i <= renderN; i++) {
         const page = await doc.getPage(i);
         const base = page.getViewport({ scale: 1 });
-        const scale = Math.min(1.45, MAX_EDGE / Math.max(base.width, base.height));
+        const maxEdge = options?.maxEdge ?? MAX_EDGE;
+        const scale = Math.min(1.7, maxEdge / Math.max(base.width, base.height));
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement("canvas");
         canvas.width = Math.max(1, Math.floor(viewport.width));
@@ -180,7 +192,7 @@ export async function filesToPages(
         const ctx = canvas.getContext("2d");
         if (!ctx) throw new Error("Could not render a PDF page.");
         await page.render({ canvasContext: ctx, viewport }).promise;
-        const img = await bitmapToJpeg(canvas, canvas.width, canvas.height);
+        const img = await bitmapToJpeg(canvas, canvas.width, canvas.height, maxEdge, options?.targetB64 ?? TARGET_B64);
         images.push({ ...img, page: images.length + 1 });
       }
     } else if (file.type.startsWith("image/")) {
@@ -189,7 +201,8 @@ export async function filesToPages(
         truncated = true;
         continue;
       }
-      images.push(await imageFileToPage(file, images.length + 1));
+      const img = await imageFileToPage(file, images.length + 1, options);
+      images.push(img);
     }
   }
   return {
