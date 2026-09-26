@@ -244,8 +244,11 @@ export async function markCompletedScript(input: {
     }
   | { ok: false; error: string }
 > {
-  const richSchemeText = Boolean(input.schemeText && input.schemeText.trim().length > 700);
-  const schemeImages = richSchemeText ? input.schemeImages.slice(0, 4) : input.schemeImages;
+  // Do not replace the scheme pages with the selectable PDF text. Many GCSE
+  // schemes put several pages of general guidance before the actual question
+  // criteria, so keeping only the first few images makes later questions
+  // impossible to mark. The parser receives each image/text page batch below.
+  const schemeImages = input.schemeImages;
 
   let scheme: MarkSchemeParse;
   let paper: PaperParse | null = input.paper ?? null;
@@ -298,7 +301,10 @@ export async function markCompletedScript(input: {
       questions,
       scheme,
       answerImages: imageBatches[i],
-      schemeImages: i === 0 && scheme.confidence < 0.55 ? schemeImages.slice(0, 4) : undefined,
+      // The parsed scheme is the single source of truth for marking. Re-sending
+      // just the first scheme pages here biases the model towards the general
+      // guidance pages and can make it discard later mark points.
+      schemeImages: undefined,
       typedAnswers: i === 0 ? input.paperText : undefined,
     });
     if (!markRes.ok) {
@@ -343,10 +349,14 @@ async function parseSchemeInBatches(input: {
   }
   const parts: MarkSchemeParse[] = [];
   let lastError = "";
+  const textBatches = chunkPdfText(input.typedText, 8, 1);
   for (let i = 0; i < batches.length; i++) {
     const res = await parseMarkScheme({
       images: batches[i],
-      typedText: i === 0 ? input.typedText : undefined,
+      // filesToPages labels selectable text with `--- page N ---`. Passing the
+      // corresponding text prevents a long document's first batch from
+      // crowding out all later question mark schemes.
+      typedText: textBatches[i] ?? (i === 0 ? input.typedText : undefined),
       questionRefs: [],
     });
     if (res.ok) parts.push(res.data);
@@ -445,6 +455,17 @@ export function mergePaperMarks(parts: PaperMark[], scheme?: MarkSchemeParse): P
   }, scheme));
 }
 
+function chunkPdfText(text: string | undefined, size: number, overlap: number): string[] {
+  const cleaned = text?.trim();
+  if (!cleaned) return [];
+  const pages = cleaned
+    .split(/(?=--- page \d+ ---)/i)
+    .map((page) => page.trim())
+    .filter(Boolean);
+  if (pages.length < 2) return [cleaned];
+  return chunk(pages, size, overlap).map((batch) => batch.join("\n"));
+}
+
 function reconcileSchemeWithPaper(scheme: MarkSchemeParse, paper: PaperParse | null): MarkSchemeParse {
   if (!paper?.questions.length) return scheme;
   const schemeTotal = scheme.questions.reduce((sum, question) => sum + question.total_marks, 0);
@@ -526,9 +547,12 @@ function normaliseTotals(mark: PaperMark, scheme?: MarkSchemeParse): PaperMark {
     const awardedGroups = new Set<string>();
     const fromPoints = q.points.reduce((sum, point) => {
       if (!point.awarded) return sum;
-      const source = point.point_id
-        ? officialPoints.get(point.point_id)
-        : pointsByCode.get(point.code)?.find((candidate) => !usedPointIds.has(candidate.id));
+      // Models occasionally return an official label (e.g. "M1") in point_id
+      // rather than our generated id (e.g. "4a-1"). Treat it as the label and
+      // map it to the next unused official point instead of silently changing
+      // an otherwise evidenced mark into zero.
+      const source = officialPoints.get(point.point_id)
+        ?? pointsByCode.get(point.code || point.point_id)?.find((candidate) => !usedPointIds.has(candidate.id));
       if (!source) return sum;
       if (usedPointIds.has(source.id)) return sum;
       usedPointIds.add(source.id);

@@ -178,7 +178,7 @@ function ExamPage() {
         <TopicVideo skillIds={current.skillIds} collapsed />
         <p className="mt-4 text-xs font-medium uppercase tracking-[0.14em] text-fg-subtle">Working pad</p>
         <div className="mt-2">
-          <WorkingCanvas className="select-none" storageKey={`exam-${id}-${current.id}`} minHeight={420} />
+          <WorkingCanvas className="select-none" storageKey={`exam-${id}-${current.id}`} minHeight={600} />
         </div>
         <Textarea
           className="mt-4"

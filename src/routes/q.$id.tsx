@@ -174,7 +174,7 @@ function QuestionPage() {
         </div>
         {padMode === "write" ? (
           <div className="mt-3">
-            <WorkingCanvas ref={padRef} storageKey={`working-${id}`} minHeight={480} />
+            <WorkingCanvas ref={padRef} storageKey={`working-${id}`} minHeight={600} />
           </div>
         ) : null}
         {padMode === "type" ? (

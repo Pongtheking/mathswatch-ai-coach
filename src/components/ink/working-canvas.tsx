@@ -114,7 +114,6 @@ export const WorkingCanvas = forwardRef<WorkingCanvasHandle, Props>(function Wor
   const [focus, setFocus] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [penHint, setPenHint] = useState(false);
   const [height, setHeight] = useState(minHeight);
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
@@ -315,7 +314,6 @@ export const WorkingCanvas = forwardRef<WorkingCanvasHandle, Props>(function Wor
     const type = e.pointerType || "mouse";
     if (type === "pen") {
       lastPen.current = Date.now();
-      setPenHint(true);
     }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type });
     try {
@@ -606,6 +604,23 @@ export const WorkingCanvas = forwardRef<WorkingCanvasHandle, Props>(function Wor
     return () => window.removeEventListener("resize", fit);
   }, [focus, minHeight]);
 
+  // A normal question page has limited vertical space on an iPad. Give a
+  // touch-first pad most of the viewport from the start, rather than making a
+  // student enter focus mode before there is room for a full calculation.
+  useEffect(() => {
+    if (focus || !window.matchMedia("(pointer: coarse)").matches) return;
+    const fitTouchPad = () => {
+      const next = Math.max(minHeight, Math.round(window.innerHeight * 0.64));
+      if (next > paperH.current) {
+        paperH.current = next;
+        setHeight(next);
+      }
+    };
+    fitTouchPad();
+    window.addEventListener("resize", fitTouchPad);
+    return () => window.removeEventListener("resize", fitTouchPad);
+  }, [focus, minHeight]);
+
   return (
     <div
       className={cn(
@@ -653,7 +668,6 @@ export const WorkingCanvas = forwardRef<WorkingCanvasHandle, Props>(function Wor
             focus={focus}
             canUndo={canUndo}
             canRedo={canRedo}
-            penHint={penHint}
             onTool={setTool}
             onColor={setColor}
             onSize={setSize}
@@ -679,7 +693,6 @@ function Toolbar({
   focus,
   canUndo,
   canRedo,
-  penHint,
   onTool,
   onColor,
   onSize,
@@ -698,7 +711,6 @@ function Toolbar({
   focus: boolean;
   canUndo: boolean;
   canRedo: boolean;
-  penHint: boolean;
   onTool: (t: Tool) => void;
   onColor: (c: string) => void;
   onSize: (n: number) => void;
@@ -710,8 +722,8 @@ function Toolbar({
   onClear: () => void;
 }) {
   return (
-    <div className="ink-dock border-t border-border p-2 md:pointer-events-none md:absolute md:inset-x-auto md:top-1/2 md:bottom-auto md:left-2 md:z-10 md:-translate-y-1/2 md:border-0 md:p-0">
-      <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border bg-bg-elevated/95 px-1.5 py-1 shadow-card backdrop-blur-md md:flex-col md:rounded-[22px] md:px-1.5 md:py-2">
+    <div className="ink-dock pointer-events-none absolute inset-x-2 bottom-2 z-10">
+      <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border bg-bg-elevated/95 px-1.5 py-1 shadow-card backdrop-blur-md">
         <ToolBtn active={tool === "pen"} label="Fountain pen" onClick={() => onTool("pen")}>
           <Pencil className="size-4" />
         </ToolBtn>
@@ -724,8 +736,8 @@ function Toolbar({
         <ToolBtn active={tool === "eraser"} label="Eraser" onClick={() => onTool("eraser")}>
           <Eraser className="size-4" />
         </ToolBtn>
-        <span className="mx-0.5 hidden h-4 w-px bg-border md:mx-0 md:my-1 md:block md:h-px md:w-6" />
-        <div className="flex items-center gap-1 md:flex-col">
+        <span className="mx-0.5 h-4 w-px shrink-0 bg-border" />
+        <div className="flex shrink-0 items-center gap-1">
           {INK_COLORS.map((c) => (
             <button
               key={c.id}
@@ -740,7 +752,7 @@ function Toolbar({
             />
           ))}
         </div>
-        <div className="flex items-center gap-1 px-1 md:flex-col md:py-1">
+        <div className="flex shrink-0 items-center gap-1 px-1">
           {SIZES.map((s) => (
             <button
               key={s}
@@ -756,7 +768,7 @@ function Toolbar({
             </button>
           ))}
         </div>
-        <span className="mx-0.5 hidden h-4 w-px bg-border md:mx-0 md:my-1 md:block md:h-px md:w-6" />
+        <span className="mx-0.5 h-4 w-px shrink-0 bg-border" />
         <ToolBtn active={false} label="Undo" disabled={!canUndo} onClick={onUndo}>
           <Undo2 className="size-4" />
         </ToolBtn>
@@ -780,11 +792,6 @@ function Toolbar({
           <Trash2 className="size-4" />
         </ToolBtn>
       </div>
-      <p className="pointer-events-none mt-2 hidden px-1 text-[11px] text-fg-subtle md:block">
-        {penHint
-          ? "Pencil writes on the page · two fingers pan · pinch zooms · hold still to snap a line"
-          : "Write on the square paper. Pencil or finger. Two fingers to pan."}
-      </p>
     </div>
   );
 }
